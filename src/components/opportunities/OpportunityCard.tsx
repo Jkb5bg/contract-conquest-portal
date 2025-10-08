@@ -5,8 +5,7 @@ import {
   ClockIcon,
   BuildingOfficeIcon,
   CurrencyDollarIcon,
-  StarIcon,
-  RocketLaunchingIcon,
+  RocketLaunchIcon,
   XMarkIcon,
   CheckCircleIcon,
   ChevronDownIcon,
@@ -35,7 +34,7 @@ export default function OpportunityCard({ opportunity, onStatusChange, onViewDet
       case OpportunityStatus.SAVED:
         return <StarSolid className="h-5 w-5 text-yellow-400" />;
       case OpportunityStatus.PURSUING:
-        return <RocketLaunchingIcon className="h-5 w-5 text-green-400" />;
+        return <RocketLaunchIcon className="h-5 w-5 text-green-400" />;
       case OpportunityStatus.PASSED:
         return <XMarkIcon className="h-5 w-5 text-gray-400" />;
       case OpportunityStatus.APPLIED:
