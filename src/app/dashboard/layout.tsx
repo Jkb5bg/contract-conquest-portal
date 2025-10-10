@@ -1,13 +1,167 @@
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import React from "react";
+'use client';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  HomeIcon, 
+  FolderIcon, 
+  UserCircleIcon, 
+  ArrowRightOnRectangleIcon,
+  BellIcon,
+  ChartBarIcon,
+  Cog6ToothIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline';
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+const ADMIN_EMAILS = ['jasonlettered@gmail.com', 'jbcloses@gmail.com'];
+
+// Page titles mapping
+const PAGE_TITLES: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/dashboard/opportunities': 'Opportunities',
+  '/dashboard/profile': 'Profile',
+  '/dashboard/analytics': 'Analytics',
+  '/dashboard/admin': 'Admin Panel',
+};
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+
+  const navigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+    { name: 'Opportunities', href: '/dashboard/opportunities', icon: FolderIcon },
+    { name: 'Profile', href: '/dashboard/profile', icon: UserCircleIcon },
+    { name: 'Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
+  ];
+
+  if (isAdmin) {
+    navigation.push({ name: 'Admin', href: '/dashboard/admin', icon: Cog6ToothIcon });
+  }
+
+  // Get the current page title
+  const currentPageTitle = PAGE_TITLES[pathname] || 'Portal';
+
   return (
-    <ProtectedRoute>
-      <DashboardLayout>
-        {children}
-      </DashboardLayout>
-    </ProtectedRoute>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Background Animation */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '4s' }} />
+      </div>
+
+      {/* Sidebar - FIXED AND STATIC */}
+      <div className="fixed inset-y-0 left-0 w-64 bg-black/30 backdrop-blur-xl border-r border-white/10 z-50">
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="px-6 py-6 border-b border-white/10">
+            <div className="flex items-center">
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg mr-3">
+                <SparklesIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  Contract Conquest
+                </h2>
+                <p className="text-xs text-gray-500">Opportunity Portal</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`
+                    group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all
+                    ${isActive 
+                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-500/50' 
+                      : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                    }
+                  `}
+                >
+                  <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`} />
+                  {item.name}
+                  {isActive && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User Section */}
+          <div className="px-4 py-4 border-t border-white/10 bg-black/20">
+            <div className="flex items-center px-3 py-2 mb-2 rounded-lg bg-white/5">
+              <div className="relative">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-blue-400 flex items-center justify-center text-white font-bold">
+                  {user?.email.charAt(0).toUpperCase()}
+                </div>
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-slate-900 rounded-full" />
+              </div>
+              <div className="ml-3 flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {user?.email.split('@')[0]}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {isAdmin ? 'Administrator' : 'Member'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="w-full flex items-center px-3 py-2 text-sm font-medium text-gray-400 rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-all group"
+            >
+              <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="pl-64">
+        {/* Top Bar - CHANGES BASED ON PAGE */}
+        <div className="sticky top-0 z-40 bg-black/20 backdrop-blur-xl border-b border-white/10">
+          <div className="px-8 py-4 flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-semibold text-white">
+                {currentPageTitle}
+              </h1>
+              <p className="text-sm text-gray-400 mt-1">
+                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              {/* Notifications */}
+              <button className="relative p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/5 rounded-lg">
+                <BellIcon className="h-6 w-6" />
+                <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-purple-500 ring-2 ring-slate-900" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Page Content - THIS IS THE ONLY PART THAT CHANGES */}
+        <main className="p-8 min-h-[calc(100vh-73px)]">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }

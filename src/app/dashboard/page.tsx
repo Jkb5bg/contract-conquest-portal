@@ -220,7 +220,7 @@ export default function EnhancedDashboard() {
               <ArrowTrendingUpIcon className="h-5 w-5 mr-2" />
               High-Score Opportunities
             </h3>
-            <Link href="/opportunities">
+            <Link href="/dashboard/opportunities">
               <Button variant="ghost" size="sm">
                 View All <ArrowRightIcon className="h-4 w-4 ml-1" />
               </Button>
@@ -279,7 +279,7 @@ export default function EnhancedDashboard() {
               title="No opportunities yet"
               description="New opportunities will appear here as they match your profile"
               action={
-                <Link href="/profile">
+                <Link href="/dashboard/profile">
                   <Button variant="primary">
                     Complete Your Profile
                   </Button>
@@ -292,7 +292,7 @@ export default function EnhancedDashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Link href="/opportunities">
+        <Link href="/dashboard/opportunities">
           <Card hoverable className="cursor-pointer">
             <CardBody className="text-center">
               <div className="inline-flex p-4 bg-purple-500/20 rounded-full mb-3">
@@ -304,7 +304,7 @@ export default function EnhancedDashboard() {
           </Card>
         </Link>
 
-        <Link href="/profile">
+        <Link href="/dashboard/profile">
           <Card hoverable className="cursor-pointer">
             <CardBody className="text-center">
               <div className="inline-flex p-4 bg-blue-500/20 rounded-full mb-3">
@@ -316,7 +316,7 @@ export default function EnhancedDashboard() {
           </Card>
         </Link>
 
-        <Link href="/analytics">
+        <Link href="/dashboard/analytics">
           <Card hoverable className="cursor-pointer">
             <CardBody className="text-center">
               <div className="inline-flex p-4 bg-green-500/20 rounded-full mb-3">
