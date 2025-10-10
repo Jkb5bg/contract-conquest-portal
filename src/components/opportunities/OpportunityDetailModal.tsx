@@ -104,7 +104,7 @@ export default function OpportunityDetailModal({
             <h3 className="text-lg font-semibold text-white mb-3">Resources</h3>
             <div className="space-y-2">
               <a
-                href={`https://sam.gov/opportunities/${opportunity.opportunity_id ?? ''}`}
+                href={`https://sam.gov/workspace/contract/opp/${opportunity.opportunity_id ?? ''}/view`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center text-purple-400 hover:text-purple-300 transition-colors"
