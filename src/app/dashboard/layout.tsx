@@ -7,7 +7,6 @@ import {
   FolderIcon, 
   UserCircleIcon, 
   ArrowRightOnRectangleIcon,
-  BellIcon,
   ChartBarIcon,
   Cog6ToothIcon,
   SparklesIcon,
@@ -130,28 +129,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="pl-64">
         {/* Top Bar - CHANGES BASED ON PAGE */}
         <div className="sticky top-0 z-40 bg-black/20 backdrop-blur-xl border-b border-white/10">
-          <div className="px-8 py-4 flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-semibold text-white">
-                {currentPageTitle}
-              </h1>
-              <p className="text-sm text-gray-400 mt-1">
-                {new Date().toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {/* Notifications */}
-              <button className="relative p-2 text-gray-400 hover:text-white transition-colors hover:bg-white/5 rounded-lg">
-                <BellIcon className="h-6 w-6" />
-                <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-purple-500 ring-2 ring-slate-900" />
-              </button>
-            </div>
+          <div className="px-8 py-4">
+            <h1 className="text-2xl font-semibold text-white">
+              {currentPageTitle}
+            </h1>
+            <p className="text-sm text-gray-400 mt-1">
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </p>
           </div>
         </div>
 
