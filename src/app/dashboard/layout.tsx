@@ -9,7 +9,6 @@ import {
   ArrowRightOnRectangleIcon,
   ChartBarIcon,
   Cog6ToothIcon,
-  SparklesIcon,
 } from '@heroicons/react/24/outline';
 
 const ADMIN_EMAILS = ['jasonlettered@gmail.com', 'jbcloses@gmail.com'];
@@ -58,9 +57,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Logo */}
           <div className="px-6 py-6 border-b border-white/10">
             <div className="flex items-center">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg mr-3">
-                <SparklesIcon className="h-6 w-6 text-white" />
-              </div>
+            <img src="/logo.svg" alt="Contract Conquest" className="h-10 w-10 mr-3" />
               <div>
                 <h2 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                   Contract Conquest
