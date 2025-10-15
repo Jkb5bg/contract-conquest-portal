@@ -1,5 +1,5 @@
 'use client';
-import { usePathname } from 'next/navigation';
+import {usePathname, useRouter} from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -10,6 +10,7 @@ import {
   ChartBarIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
+import {useEffect} from "react";
 
 const ADMIN_EMAILS = ['jasonlettered@gmail.com', 'jbcloses@gmail.com'];
 
@@ -24,7 +25,16 @@ const PAGE_TITLES: Record<string, string> = {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const router = useRouter();
+  const { user, logout, isLoading } = useAuth();
+
+  // Protect the dashboard - redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
 
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
 
@@ -41,6 +51,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Get the current page title
   const currentPageTitle = PAGE_TITLES[pathname] || 'Portal';
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-400 mt-4">Loading your portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+    // Don't render dashboard if not authenticated
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
