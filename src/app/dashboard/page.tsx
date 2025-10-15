@@ -25,7 +25,6 @@ export default function EnhancedDashboard() {
   const [loading, setLoading] = useState(true);
   const [profileCompleteness, setProfileCompleteness] = useState(0);
 
-
   useEffect(() => {
     fetchDashboardData();
     fetchProfileCompleteness();
@@ -47,15 +46,35 @@ export default function EnhancedDashboard() {
       const profileRes = await apiClient.get('/profile/me');
       const profileData = profileRes.data;
 
-      // Calculate completeness
+      // Calculate completeness - consistent with profile page
       let score = 0;
+
+      // Basic Info (15%)
       if (profileData.company_name && profileData.email) score += 15;
-      if (profileData.cage_code || profileData.uei) score += 15;
-      if (profileData.primary_naics && profileData.primary_naics.length >= 3) score += 20;
-      if (profileData.capabilities && profileData.capabilities.length >= 3) score += 20;
-      if (profileData.past_performance_agencies && profileData.past_performance_agencies.length > 0) score += 15;
+
+      // Identifiers (15%) - give credit if they have CAGE/UEI OR if they've indicated they don't have them
+      const hasIdentifiers = profileData.cage_code || profileData.uei;
+      const identifiersMarkedNone = profileData.has_identifiers === false; // This would need to be tracked in the API
+      if (hasIdentifiers || identifiersMarkedNone) score += 15;
+
+      // NAICS Codes (15%)
+      if (profileData.primary_naics && profileData.primary_naics.length > 0) score += 15;
+
+      // Capabilities (20%) - give credit if they have 3+ OR if marked as "None"
+      const hasCapabilities = profileData.capabilities && profileData.capabilities.length >= 3;
+      const capabilitiesMarkedNone = profileData.has_capabilities === false;
+      if (hasCapabilities || capabilitiesMarkedNone) score += 20;
+
+      // Experience/Agencies (15%) - give credit if they have any OR if marked as "None"
+      const hasAgencies = profileData.past_performance_agencies && profileData.past_performance_agencies.length > 0;
+      const agenciesMarkedNone = profileData.has_agencies === false;
+      if (hasAgencies || agenciesMarkedNone) score += 15;
+
+      // Geographic Preferences (10%)
       if (profileData.geographic_preferences && profileData.geographic_preferences.length > 0) score += 10;
-      if (profileData.set_aside_eligibilities && profileData.set_aside_eligibilities.length > 0) score += 5;
+
+      // Set-Aside Eligibilities (10%)
+      if (profileData.set_aside_eligibilities && profileData.set_aside_eligibilities.length > 0) score += 10;
 
       setProfileCompleteness(score);
     } catch (error) {

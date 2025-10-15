@@ -23,7 +23,8 @@ import {
   PlusIcon,
   XMarkIcon,
   CheckCircleIcon,
-  SparklesIcon, ArrowTopRightOnSquareIcon,
+  SparklesIcon,
+  ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
 import {InformationCircleIcon} from "@heroicons/react/16/solid";
 
@@ -38,9 +39,9 @@ export default function ConsistentProfilePage() {
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [newCapability, setNewCapability] = useState('');
   const [hasCapabilities, setHasCapabilities] = useState(true);
-  const [hasAgencies, setHasAgencies] = useState(true);
   const [agencies, setAgencies] = useState<string[]>([]);
   const [newAgency, setNewAgency] = useState('');
+  const [hasAgencies, setHasAgencies] = useState(true);
   const [naicsPrimary, setNaicsPrimary] = useState<string[]>([]);
   const [newNaics, setNewNaics] = useState('');
   const [geographicPreferences, setGeographicPreferences] = useState<string[]>([]);
@@ -60,14 +61,14 @@ export default function ConsistentProfilePage() {
       const profileData = response.data;
       setProfile(profileData);
       setCapabilities(profileData.capabilities || []);
-      setHasCapabilities((profileData.capabilities && profileData.capabilities.length > 0) || true);
+      setHasCapabilities(profileData.has_capabilities !== false); // Default to true if not specified
       setAgencies(profileData.past_performance_agencies || []);
-      setHasAgencies((profileData.past_performance_agencies && profileData.past_performance_agencies.length > 0) || true);
+      setHasAgencies(profileData.has_agencies !== false); // Default to true if not specified
       setNaicsPrimary(profileData.primary_naics || []);
       setGeographicPreferences(profileData.geographic_preferences || []);
       setSetAsideEligibilities(profileData.set_aside_eligibilities || []);
-      setCageCodeProvided(!!(profileData.cage_code));
-      setUeiProvided(!!(profileData.uei));
+      setCageCodeProvided(profileData.has_identifiers !== false && !!(profileData.cage_code) || profileData.has_identifiers === true);
+      setUeiProvided(profileData.has_identifiers !== false && !!(profileData.uei) || profileData.has_identifiers === true);
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     } finally {
@@ -81,12 +82,15 @@ export default function ConsistentProfilePage() {
       await apiClient.put('/profile/update', {
         ...profile,
         capabilities: hasCapabilities ? capabilities : [],
+        has_capabilities: hasCapabilities, // Track whether they have capabilities or marked as "None"
         past_performance_agencies: hasAgencies ? agencies : [],
+        has_agencies: hasAgencies, // Track whether they have agencies or marked as "None"
         primary_naics: naicsPrimary,
         geographic_preferences: geographicPreferences,
         set_aside_eligibilities: setAsideEligibilities,
         cage_code: cageCodeProvided ? profile?.cage_code : null,
         uei: ueiProvided ? profile?.uei : null,
+        has_identifiers: cageCodeProvided || ueiProvided, // Track whether they provided identifiers
       });
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -119,13 +123,30 @@ export default function ConsistentProfilePage() {
   const calculateCompleteness = () => {
     if (!profile) return 0;
     let score = 0;
+
+    // Basic Info (15%)
     if (profile.company_name && profile.email) score += 15;
-    if (profile.cage_code || profile.uei) score += 15;
-    if (capabilities.length >= 3) score += 20;
-    if (agencies.length > 0) score += 15;
+
+    // Identifiers (15%) - give credit if they have CAGE/UEI OR if they've marked as "None"
+    const hasIdentifiers = profile.cage_code || profile.uei;
+    const identifiersMarkedNone = !cageCodeProvided && !ueiProvided;
+    if (hasIdentifiers || identifiersMarkedNone) score += 15;
+
+    // NAICS Codes (15%)
     if (naicsPrimary.length > 0) score += 15;
+
+    // Capabilities (20%) - give credit if they have 3+ OR if marked as "None"
+    if (capabilities.length >= 3 || !hasCapabilities) score += 20;
+
+    // Experience/Agencies (15%) - give credit if they have any OR if marked as "None"
+    if (agencies.length > 0 || !hasAgencies) score += 15;
+
+    // Geographic Preferences (10%)
     if (geographicPreferences.length > 0) score += 10;
+
+    // Set-Aside Eligibilities (10%)
     if (setAsideEligibilities.length > 0) score += 10;
+
     return score;
   };
 
@@ -138,7 +159,6 @@ export default function ConsistentProfilePage() {
     { id: 'certifications', label: 'Certifications', icon: ShieldCheckIcon },
   ];
 
-    // Set-aside options
   const setAsideOptions = [
     { value: 'SBA', label: 'Small Business (SBA)', description: 'Total receipts/employees below SBA size standards' },
     { value: 'SDVOSB', label: 'Service-Disabled Veteran-Owned', description: 'At least 51% owned by service-disabled veterans' },
@@ -148,7 +168,6 @@ export default function ConsistentProfilePage() {
     { value: 'VetCert', label: 'Veteran-Owned', description: 'At least 51% owned by veterans' },
   ];
 
-  // Geographic examples
   const geographicExamples = [
     'Washington DC Metro Area',
     'California',
