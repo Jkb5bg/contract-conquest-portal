@@ -13,6 +13,7 @@ export interface Opportunity {
   naics_code?: string;
   set_aside?: string;
   description?: string;
+  opportunity_url?: string | null;
 }
 
 export enum OpportunityStatus {

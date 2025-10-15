@@ -16,7 +16,7 @@ import {
 } from '@/components/ui';
 import {
   MagnifyingGlassIcon,
-  FunnelIcon,
+  ArrowTopRightOnSquareIcon,
   BuildingOfficeIcon,
   ClockIcon,
   CurrencyDollarIcon,
@@ -50,6 +50,11 @@ export default function ConsistentOpportunitiesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toExternal = (url?: string): string => {
+    if (!url) return '';
+    return url.startsWith('http') ? url : `https://${url}`;
   };
 
   const handleStatusChange = async (id: string, status: OpportunityStatus) => {
@@ -106,9 +111,9 @@ export default function ConsistentOpportunitiesPage() {
                 Found {filteredOpportunities.length} opportunities matching your profile
               </p>
             </div>
-            <Button variant="primary" onClick={fetchOpportunities}>
-              Refresh
-            </Button>
+            {/*<Button variant="primary" onClick={fetchOpportunities}>*/}
+            {/*  Refresh*/}
+            {/*</Button>*/}
           </div>
         </CardBody>
       </Card>
@@ -239,7 +244,7 @@ export default function ConsistentOpportunitiesPage() {
               </CardBody>
 
               <CardFooter>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between w-full">
                   <div className="flex gap-2">
                     {opp.status !== OpportunityStatus.SAVED && (
                       <Button
@@ -272,11 +277,30 @@ export default function ConsistentOpportunitiesPage() {
                       </Button>
                     )}
                   </div>
-                  <Button size="sm" variant="ghost">
-                    View Details →
-                  </Button>
+
+                  <div className="flex items-center gap-3">
+                    {/* Claude's suggestion: external link button (HigherGov) */}
+                    {opp.opportunity_url ? (
+                      <a
+                        href={toExternal(opp.opportunity_url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
+                      >
+                        <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-2" />
+                        View on HigherGov
+                      </a>
+                    ) : (
+                      <span className="text-xs text-gray-500">Link unavailable</span>
+                    )}
+
+                    <Button size="sm" variant="ghost">
+                      View Details →
+                    </Button>
+                  </div>
                 </div>
               </CardFooter>
+
             </Card>
           ))
         ) : (
