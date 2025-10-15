@@ -291,29 +291,69 @@ export default function ConsistentProfilePage() {
                   </div>
 
                   <div>
+                    <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-start">
+                      <InformationCircleIcon className="h-5 w-5 text-blue-400 mr-3 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-blue-300">
+                        <p className="font-medium mb-1">NAICS Code Tips:</p>
+                        <ul className="list-disc list-inside space-y-1 text-blue-200">
+                          <li>Add 3-10 codes that best represent your business</li>
+                          <li>Your primary NAICS should match your SAM.gov registration</li>
+                          <li>More focused codes = better opportunity matching</li>
+                          <li>Examples: 541512 (Computer Systems Design), 541330 (Engineering)</li>
+                        </ul>
+                      </div>
+                    </div>
+
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Primary NAICS Codes
+                      Primary NAICS Codes ({naicsPrimary.length}/10)
                     </label>
                     <div className="flex gap-2 mb-3">
                       <Input
-                        placeholder="6-digit NAICS"
+                        placeholder="6-digit NAICS (e.g., 541512)"
                         maxLength={6}
                         value={newNaics}
-                        onChange={(e) => setNewNaics(e.target.value)}
+                        onChange={(e) => {
+                          // Only allow numbers
+                          const value = e.target.value.replace(/[^0-9]/g, '');
+                          setNewNaics(value);
+                        }}
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
+                            if (naicsPrimary.length < 10 && newNaics.length === 6) {
+                              addItem(naicsPrimary, setNaicsPrimary, newNaics, () => setNewNaics(''));
+                            }
+                          }
+                        }}
+                        disabled={naicsPrimary.length >= 10}
+                      />
+                      <Button
+                        onClick={() => {
+                          if (newNaics.length === 6) {
                             addItem(naicsPrimary, setNaicsPrimary, newNaics, () => setNewNaics(''));
                           }
                         }}
-                      />
-                      <Button
-                        onClick={() => addItem(naicsPrimary, setNaicsPrimary, newNaics, () => setNewNaics(''))}
                         icon={<PlusIcon className="h-5 w-5" />}
+                        disabled={naicsPrimary.length >= 10 || newNaics.length !== 6}
                       >
                         Add
                       </Button>
                     </div>
+
+                    {newNaics.length > 0 && newNaics.length < 6 && (
+                      <p className="text-xs text-yellow-400 mb-3">
+                        NAICS codes must be exactly 6 digits
+                      </p>
+                    )}
+
+                    {naicsPrimary.length >= 10 && (
+                      <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                        <p className="text-sm text-yellow-300">
+                          Maximum of 10 NAICS codes reached. Remove one to add another.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap gap-2">
                       {naicsPrimary.map((naics) => (
                         <Badge key={naics} variant="primary">
@@ -327,6 +367,20 @@ export default function ConsistentProfilePage() {
                         </Badge>
                       ))}
                     </div>
+
+                    {naicsPrimary.length === 0 && (
+                      <div className="mt-3 text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
+                        <IdentificationIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
+                        <p className="text-gray-400 text-sm">No NAICS codes added yet</p>
+                        <p className="text-gray-500 text-xs mt-1">Add at least one to improve matching</p>
+                      </div>
+                    )}
+
+                    {naicsPrimary.length > 0 && naicsPrimary.length < 3 && (
+                      <p className="text-sm text-yellow-400 mt-3">
+                        Add at least 3 NAICS codes for optimal opportunity matching
+                      </p>
+                    )}
                   </div>
                 </>
               )}
@@ -345,8 +399,13 @@ export default function ConsistentProfilePage() {
                         <li>Data Analytics & Business Intelligence</li>
                         <li>Network Infrastructure Design</li>
                       </ul>
+                      <p className="mt-2 text-xs text-blue-200">Recommended: 3-15 capabilities</p>
                     </div>
                   </div>
+
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Your Capabilities ({capabilities.length}/15)
+                  </label>
 
                   <div className="flex gap-2 mb-4">
                     <Input
@@ -354,36 +413,62 @@ export default function ConsistentProfilePage() {
                       value={newCapability}
                       onChange={(e) => setNewCapability(e.target.value)}
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && newCapability.trim()) {
                           e.preventDefault();
-                          addItem(capabilities, setCapabilities, newCapability, () => setNewCapability(''));
+                          if (capabilities.length < 15) {
+                            addItem(capabilities, setCapabilities, newCapability.trim(), () => setNewCapability(''));
+                          }
                         }
                       }}
+                      disabled={capabilities.length >= 15}
                     />
                     <Button
-                      onClick={() => addItem(capabilities, setCapabilities, newCapability, () => setNewCapability(''))}
+                      onClick={() => {
+                        if (newCapability.trim()) {
+                          addItem(capabilities, setCapabilities, newCapability.trim(), () => setNewCapability(''));
+                        }
+                      }}
                       icon={<PlusIcon className="h-5 w-5" />}
+                      disabled={capabilities.length >= 15 || !newCapability.trim()}
                     >
                       Add
                     </Button>
                   </div>
-                  <div className="space-y-2">
-                    {capabilities.map((cap) => (
-                      <div
-                        key={cap}
-                        className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-                      >
-                        <span className="text-white">{cap}</span>
-                        <button
-                          onClick={() => removeItem(capabilities, setCapabilities, cap)}
-                          className="text-red-400 hover:text-red-300"
+
+                  {capabilities.length >= 15 && (
+                    <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <p className="text-sm text-yellow-300">
+                        Maximum of 15 capabilities reached. Focus on your core strengths for best matching.
+                      </p>
+                    </div>
+                  )}
+
+                  {capabilities.length > 0 ? (
+                    <div className="space-y-2">
+                      {capabilities.map((cap) => (
+                        <div
+                          key={cap}
+                          className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
                         >
-                          <XMarkIcon className="h-5 w-5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  {capabilities.length < 3 && (
+                          <span className="text-white">{cap}</span>
+                          <button
+                            onClick={() => removeItem(capabilities, setCapabilities, cap)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <XMarkIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
+                      <BriefcaseIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
+                      <p className="text-gray-400 text-sm">No capabilities added yet</p>
+                      <p className="text-gray-500 text-xs mt-1">Add your core competencies to improve matching</p>
+                    </div>
+                  )}
+
+                  {capabilities.length > 0 && capabilities.length < 3 && (
                     <p className="text-sm text-yellow-400 mt-4">
                       Add at least 3 capabilities for better opportunity matching
                     </p>
@@ -405,8 +490,13 @@ export default function ConsistentProfilePage() {
                         <li>Veterans Affairs (VA)</li>
                         <li>National Institutes of Health (NIH)</li>
                       </ul>
+                      <p className="mt-2 text-xs text-blue-200">Recommended: Add up to 20 agencies</p>
                     </div>
                   </div>
+
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Past Performance Agencies ({agencies.length}/20)
+                  </label>
 
                   <div className="flex gap-2 mb-4">
                     <Input
@@ -414,35 +504,60 @@ export default function ConsistentProfilePage() {
                       value={newAgency}
                       onChange={(e) => setNewAgency(e.target.value)}
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && newAgency.trim()) {
                           e.preventDefault();
-                          addItem(agencies, setAgencies, newAgency, () => setNewAgency(''));
+                          if (agencies.length < 20) {
+                            addItem(agencies, setAgencies, newAgency.trim(), () => setNewAgency(''));
+                          }
                         }
                       }}
+                      disabled={agencies.length >= 20}
                     />
                     <Button
-                      onClick={() => addItem(agencies, setAgencies, newAgency, () => setNewAgency(''))}
+                      onClick={() => {
+                        if (newAgency.trim()) {
+                          addItem(agencies, setAgencies, newAgency.trim(), () => setNewAgency(''));
+                        }
+                      }}
                       icon={<PlusIcon className="h-5 w-5" />}
+                      disabled={agencies.length >= 20 || !newAgency.trim()}
                     >
                       Add
                     </Button>
                   </div>
-                  <div className="space-y-2">
-                    {agencies.map((agency) => (
-                      <div
-                        key={agency}
-                        className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
-                      >
-                        <span className="text-white">{agency}</span>
-                        <button
-                          onClick={() => removeItem(agencies, setAgencies, agency)}
-                          className="text-red-400 hover:text-red-300"
+
+                  {agencies.length >= 20 && (
+                    <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <p className="text-sm text-yellow-300">
+                        Maximum of 20 agencies reached.
+                      </p>
+                    </div>
+                  )}
+
+                  {agencies.length > 0 ? (
+                    <div className="space-y-2">
+                      {agencies.map((agency) => (
+                        <div
+                          key={agency}
+                          className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
                         >
-                          <XMarkIcon className="h-5 w-5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                          <span className="text-white">{agency}</span>
+                          <button
+                            onClick={() => removeItem(agencies, setAgencies, agency)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <XMarkIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
+                      <SparklesIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
+                      <p className="text-gray-400 text-sm">No agencies added yet</p>
+                      <p className="text-gray-500 text-xs mt-1">Add agencies you&#39;ve worked with to boost matching</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -457,18 +572,24 @@ export default function ConsistentProfilePage() {
                         {geographicExamples.map((example) => (
                           <button
                             key={example}
-                            onClick={() => addItem(geographicPreferences, setGeographicPreferences, example)}
-                            className="px-2 py-1 bg-blue-500/20 text-blue-200 rounded text-xs hover:bg-blue-500/30 transition-colors"
+                            onClick={() => {
+                              if (geographicPreferences.length < 15 && !geographicPreferences.includes(example)) {
+                                addItem(geographicPreferences, setGeographicPreferences, example);
+                              }
+                            }}
+                            disabled={geographicPreferences.includes(example) || geographicPreferences.length >= 15}
+                            className="px-2 py-1 bg-blue-500/20 text-blue-200 rounded text-xs hover:bg-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             + {example}
                           </button>
                         ))}
                       </div>
+                      <p className="mt-2 text-xs text-blue-200">Recommended: Add up to 15 locations</p>
                     </div>
                   </div>
 
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Geographic Preferences
+                    Geographic Preferences ({geographicPreferences.length}/15)
                   </label>
                   <div className="flex gap-2 mb-4">
                     <Input
@@ -476,19 +597,35 @@ export default function ConsistentProfilePage() {
                       value={newGeographic}
                       onChange={(e) => setNewGeographic(e.target.value)}
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && newGeographic.trim()) {
                           e.preventDefault();
-                          addItem(geographicPreferences, setGeographicPreferences, newGeographic, () => setNewGeographic(''));
+                          if (geographicPreferences.length < 15) {
+                            addItem(geographicPreferences, setGeographicPreferences, newGeographic.trim(), () => setNewGeographic(''));
+                          }
                         }
                       }}
+                      disabled={geographicPreferences.length >= 15}
                     />
                     <Button
-                      onClick={() => addItem(geographicPreferences, setGeographicPreferences, newGeographic, () => setNewGeographic(''))}
+                      onClick={() => {
+                        if (newGeographic.trim()) {
+                          addItem(geographicPreferences, setGeographicPreferences, newGeographic.trim(), () => setNewGeographic(''));
+                        }
+                      }}
                       icon={<PlusIcon className="h-5 w-5" />}
+                      disabled={geographicPreferences.length >= 15 || !newGeographic.trim()}
                     >
                       Add
                     </Button>
                   </div>
+
+                  {geographicPreferences.length >= 15 && (
+                    <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <p className="text-sm text-yellow-300">
+                        Maximum of 15 geographic preferences reached.
+                      </p>
+                    </div>
+                  )}
 
                   {geographicPreferences.length > 0 ? (
                     <div className="space-y-2">

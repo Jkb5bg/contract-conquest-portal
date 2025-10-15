@@ -1,15 +1,15 @@
 #TODO
+Dashboard:
+
+"Complete profile" pop up
 
 Profile:
 
-NAICS code limitation
-Subscriber tiers
-Examples for capabilities/options
-Experience section
-Preferences is just empty
-Certifications is also just empty
+#TODO Connect to backend for NAICS code limitation
+#TODO Connect to backend Subscriber tiers
+Add in a "NONE" button
 
-Add in an audit results checklist
+#TODO Get with Justin to add in an audit results checklist
 
 Opportunities:
 
