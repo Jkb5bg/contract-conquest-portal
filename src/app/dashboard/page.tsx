@@ -23,9 +23,12 @@ import Link from 'next/link';
 export default function EnhancedDashboard() {
   const [recentOpportunities, setRecentOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [profileCompleteness, setProfileCompleteness] = useState(0);
+
 
   useEffect(() => {
     fetchDashboardData();
+    fetchProfileCompleteness();
   }, []);
 
   const fetchDashboardData = async () => {
@@ -36,6 +39,27 @@ export default function EnhancedDashboard() {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProfileCompleteness = async () => {
+    try {
+      const profileRes = await apiClient.get('/profile/me');
+      const profileData = profileRes.data;
+
+      // Calculate completeness
+      let score = 0;
+      if (profileData.company_name && profileData.email) score += 15;
+      if (profileData.cage_code || profileData.uei) score += 15;
+      if (profileData.primary_naics && profileData.primary_naics.length >= 3) score += 20;
+      if (profileData.capabilities && profileData.capabilities.length >= 3) score += 20;
+      if (profileData.past_performance_agencies && profileData.past_performance_agencies.length > 0) score += 15;
+      if (profileData.geographic_preferences && profileData.geographic_preferences.length > 0) score += 10;
+      if (profileData.set_aside_eligibilities && profileData.set_aside_eligibilities.length > 0) score += 5;
+
+      setProfileCompleteness(score);
+    } catch (error) {
+      console.error('Failed to fetch profile completeness:', error);
     }
   };
 
@@ -129,8 +153,8 @@ export default function EnhancedDashboard() {
         </CardBody>
       </Card>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Quick Actions - Only show profile card if not 100% complete */}
+      <div className={`grid gap-4 ${profileCompleteness === 100 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-3'}`}>
         <Link href="/dashboard/opportunities">
           <Card hoverable className="cursor-pointer">
             <CardBody className="text-center">
@@ -143,17 +167,25 @@ export default function EnhancedDashboard() {
           </Card>
         </Link>
 
-        <Link href="/dashboard/profile">
-          <Card hoverable className="cursor-pointer">
-            <CardBody className="text-center">
-              <div className="inline-flex p-4 bg-blue-500/20 rounded-full mb-3">
-                <SparklesIcon className="h-8 w-8 text-blue-400" />
-              </div>
-              <h3 className="text-white font-semibold mb-1">Update Profile</h3>
-              <p className="text-sm text-gray-400">Improve your matching accuracy</p>
-            </CardBody>
-          </Card>
-        </Link>
+        {profileCompleteness < 100 && (
+          <Link href="/dashboard/profile">
+            <Card hoverable className="cursor-pointer border-blue-500/30 bg-blue-500/5">
+              <CardBody className="text-center">
+                <div className="inline-flex p-4 bg-blue-500/20 rounded-full mb-3">
+                  <SparklesIcon className="h-8 w-8 text-blue-400" />
+                </div>
+                <h3 className="text-white font-semibold mb-1">Complete Your Profile</h3>
+                <p className="text-sm text-gray-400">{profileCompleteness}% complete</p>
+                <div className="mt-3 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all"
+                    style={{ width: `${profileCompleteness}%` }}
+                  />
+                </div>
+              </CardBody>
+            </Card>
+          </Link>
+        )}
 
         <Link href="/dashboard/analytics">
           <Card hoverable className="cursor-pointer">

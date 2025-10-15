@@ -23,7 +23,7 @@ import {
   PlusIcon,
   XMarkIcon,
   CheckCircleIcon,
-  SparklesIcon,
+  SparklesIcon, ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
 import {InformationCircleIcon} from "@heroicons/react/16/solid";
 
@@ -37,6 +37,8 @@ export default function ConsistentProfilePage() {
   // Form states
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [newCapability, setNewCapability] = useState('');
+  const [hasCapabilities, setHasCapabilities] = useState(true);
+  const [hasAgencies, setHasAgencies] = useState(true);
   const [agencies, setAgencies] = useState<string[]>([]);
   const [newAgency, setNewAgency] = useState('');
   const [naicsPrimary, setNaicsPrimary] = useState<string[]>([]);
@@ -44,6 +46,8 @@ export default function ConsistentProfilePage() {
   const [geographicPreferences, setGeographicPreferences] = useState<string[]>([]);
   const [newGeographic, setNewGeographic] = useState('');
   const [setAsideEligibilities, setSetAsideEligibilities] = useState<string[]>([]);
+  const [cageCodeProvided, setCageCodeProvided] = useState(true);
+  const [ueiProvided, setUeiProvided] = useState(true);
 
   useEffect(() => {
     fetchProfile();
@@ -56,10 +60,14 @@ export default function ConsistentProfilePage() {
       const profileData = response.data;
       setProfile(profileData);
       setCapabilities(profileData.capabilities || []);
+      setHasCapabilities((profileData.capabilities && profileData.capabilities.length > 0) || true);
       setAgencies(profileData.past_performance_agencies || []);
+      setHasAgencies((profileData.past_performance_agencies && profileData.past_performance_agencies.length > 0) || true);
       setNaicsPrimary(profileData.primary_naics || []);
       setGeographicPreferences(profileData.geographic_preferences || []);
       setSetAsideEligibilities(profileData.set_aside_eligibilities || []);
+      setCageCodeProvided(!!(profileData.cage_code));
+      setUeiProvided(!!(profileData.uei));
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     } finally {
@@ -72,11 +80,13 @@ export default function ConsistentProfilePage() {
       setSaving(true);
       await apiClient.put('/profile/update', {
         ...profile,
-        capabilities,
-        past_performance_agencies: agencies,
+        capabilities: hasCapabilities ? capabilities : [],
+        past_performance_agencies: hasAgencies ? agencies : [],
         primary_naics: naicsPrimary,
         geographic_preferences: geographicPreferences,
         set_aside_eligibilities: setAsideEligibilities,
+        cage_code: cageCodeProvided ? profile?.cage_code : null,
+        uei: ueiProvided ? profile?.uei : null,
       });
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -204,9 +214,9 @@ export default function ConsistentProfilePage() {
                   >
                     <section.icon className="h-5 w-5 mr-3" />
                     <span className="font-medium">{section.label}</span>
-                    {((section.id === 'capabilities' && capabilities.length >= 3) ||
-                      (section.id === 'identifiers' && (profile.cage_code || profile.uei)) ||
-                      (section.id === 'experience' && agencies.length > 0) ||
+                    {((section.id === 'capabilities' && (capabilities.length >= 3 || !hasCapabilities)) ||
+                      (section.id === 'identifiers' && (profile.cage_code || profile.uei || (!cageCodeProvided && !ueiProvided))) ||
+                      (section.id === 'experience' && (agencies.length > 0 || !hasAgencies)) ||
                       (section.id === 'preferences' && geographicPreferences.length > 0) ||
                       (section.id === 'certifications' && setAsideEligibilities.length > 0)) && (
                       <CheckCircleIcon className="h-4 w-4 ml-auto text-green-400" />
@@ -273,21 +283,58 @@ export default function ConsistentProfilePage() {
               {/* Identifiers */}
               {activeSection === 'identifiers' && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      label="CAGE Code"
-                      placeholder="5-character code"
-                      maxLength={5}
-                      value={profile.cage_code || ''}
-                      onChange={(e) => setProfile({ ...profile, cage_code: e.target.value })}
-                    />
-                    <Input
-                      label="UEI"
-                      placeholder="12-character UEI"
-                      maxLength={12}
-                      value={profile.uei || ''}
-                      onChange={(e) => setProfile({ ...profile, uei: e.target.value })}
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        CAGE Code
+                      </label>
+                      <div className="space-y-2">
+                        {cageCodeProvided ? (
+                          <Input
+                            placeholder="5-character code"
+                            maxLength={5}
+                            value={profile.cage_code || ''}
+                            onChange={(e) => setProfile({ ...profile, cage_code: e.target.value })}
+                          />
+                        ) : (
+                          <div className="p-3 bg-white/5 rounded-lg text-gray-400 text-sm">
+                            Not provided
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setCageCodeProvided(!cageCodeProvided)}
+                          className="px-3 py-2 bg-gray-500/20 text-gray-400 rounded-lg text-sm hover:bg-gray-500/30 transition-colors"
+                        >
+                          {cageCodeProvided ? 'Mark as None' : 'I have a CAGE Code'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        UEI
+                      </label>
+                      <div className="space-y-2">
+                        {ueiProvided ? (
+                          <Input
+                            placeholder="12-character UEI"
+                            maxLength={12}
+                            value={profile.uei || ''}
+                            onChange={(e) => setProfile({ ...profile, uei: e.target.value })}
+                          />
+                        ) : (
+                          <div className="p-3 bg-white/5 rounded-lg text-gray-400 text-sm">
+                            Not provided
+                          </div>
+                        )}
+                        <button
+                          onClick={() => setUeiProvided(!ueiProvided)}
+                          className="px-3 py-2 bg-gray-500/20 text-gray-400 rounded-lg text-sm hover:bg-gray-500/30 transition-colors"
+                        >
+                          {ueiProvided ? 'Mark as None' : 'I have a UEI'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
@@ -301,6 +348,15 @@ export default function ConsistentProfilePage() {
                           <li>More focused codes = better opportunity matching</li>
                           <li>Examples: 541512 (Computer Systems Design), 541330 (Engineering)</li>
                         </ul>
+                        <a
+                          href="https://www.naics.com/search-naics-codes-by-industry/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 mt-2 text-blue-300 hover:text-blue-200 font-medium"
+                        >
+                          Find your NAICS code
+                          <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                        </a>
                       </div>
                     </div>
 
@@ -407,72 +463,88 @@ export default function ConsistentProfilePage() {
                     Your Capabilities ({capabilities.length}/15)
                   </label>
 
-                  <div className="flex gap-2 mb-4">
-                    <Input
-                      placeholder="Add a capability..."
-                      value={newCapability}
-                      onChange={(e) => setNewCapability(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && newCapability.trim()) {
-                          e.preventDefault();
-                          if (capabilities.length < 15) {
-                            addItem(capabilities, setCapabilities, newCapability.trim(), () => setNewCapability(''));
-                          }
-                        }
-                      }}
-                      disabled={capabilities.length >= 15}
-                    />
-                    <Button
-                      onClick={() => {
-                        if (newCapability.trim()) {
-                          addItem(capabilities, setCapabilities, newCapability.trim(), () => setNewCapability(''));
-                        }
-                      }}
-                      icon={<PlusIcon className="h-5 w-5" />}
-                      disabled={capabilities.length >= 15 || !newCapability.trim()}
-                    >
-                      Add
-                    </Button>
-                  </div>
-
-                  {capabilities.length >= 15 && (
-                    <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                      <p className="text-sm text-yellow-300">
-                        Maximum of 15 capabilities reached. Focus on your core strengths for best matching.
-                      </p>
-                    </div>
-                  )}
-
-                  {capabilities.length > 0 ? (
-                    <div className="space-y-2">
-                      {capabilities.map((cap) => (
-                        <div
-                          key={cap}
-                          className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                  {hasCapabilities ? (
+                    <>
+                      <div className="flex gap-2 mb-4">
+                        <Input
+                          placeholder="Add a capability..."
+                          value={newCapability}
+                          onChange={(e) => setNewCapability(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && newCapability.trim()) {
+                              e.preventDefault();
+                              if (capabilities.length < 15) {
+                                addItem(capabilities, setCapabilities, newCapability.trim(), () => setNewCapability(''));
+                              }
+                            }
+                          }}
+                          disabled={capabilities.length >= 15}
+                        />
+                        <Button
+                          onClick={() => {
+                            if (newCapability.trim()) {
+                              addItem(capabilities, setCapabilities, newCapability.trim(), () => setNewCapability(''));
+                            }
+                          }}
+                          icon={<PlusIcon className="h-5 w-5" />}
+                          disabled={capabilities.length >= 15 || !newCapability.trim()}
                         >
-                          <span className="text-white">{cap}</span>
-                          <button
-                            onClick={() => removeItem(capabilities, setCapabilities, cap)}
-                            className="text-red-400 hover:text-red-300"
-                          >
-                            <XMarkIcon className="h-5 w-5" />
-                          </button>
+                          Add
+                        </Button>
+                      </div>
+
+                      {capabilities.length >= 15 && (
+                        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                          <p className="text-sm text-yellow-300">
+                            Maximum of 15 capabilities reached. Focus on your core strengths for best matching.
+                          </p>
                         </div>
-                      ))}
-                    </div>
+                      )}
+
+                      {capabilities.length > 0 ? (
+                        <div className="space-y-2">
+                          {capabilities.map((cap) => (
+                            <div
+                              key={cap}
+                              className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                            >
+                              <span className="text-white">{cap}</span>
+                              <button
+                                onClick={() => removeItem(capabilities, setCapabilities, cap)}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                <XMarkIcon className="h-5 w-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
+                          <BriefcaseIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
+                          <p className="text-gray-400 text-sm">No capabilities added yet</p>
+                          <p className="text-gray-500 text-xs mt-1">Add your core competencies to improve matching</p>
+                        </div>
+                      )}
+
+                      {capabilities.length > 0 && capabilities.length < 3 && (
+                        <p className="text-sm text-yellow-400 mt-4">
+                          Add at least 3 capabilities for better opportunity matching
+                        </p>
+                      )}
+                    </>
                   ) : (
                     <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
                       <BriefcaseIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
-                      <p className="text-gray-400 text-sm">No capabilities added yet</p>
-                      <p className="text-gray-500 text-xs mt-1">Add your core competencies to improve matching</p>
+                      <p className="text-gray-400 text-sm">No capabilities provided</p>
                     </div>
                   )}
 
-                  {capabilities.length > 0 && capabilities.length < 3 && (
-                    <p className="text-sm text-yellow-400 mt-4">
-                      Add at least 3 capabilities for better opportunity matching
-                    </p>
-                  )}
+                  <button
+                    onClick={() => setHasCapabilities(!hasCapabilities)}
+                    className="mt-4 px-3 py-2 bg-gray-500/20 text-gray-400 rounded-lg text-sm hover:bg-gray-500/30 transition-colors"
+                  >
+                    {hasCapabilities ? 'Mark as None' : 'Add Capabilities'}
+                  </button>
                 </div>
               )}
 
@@ -498,66 +570,82 @@ export default function ConsistentProfilePage() {
                     Past Performance Agencies ({agencies.length}/20)
                   </label>
 
-                  <div className="flex gap-2 mb-4">
-                    <Input
-                      placeholder="Add an agency..."
-                      value={newAgency}
-                      onChange={(e) => setNewAgency(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && newAgency.trim()) {
-                          e.preventDefault();
-                          if (agencies.length < 20) {
-                            addItem(agencies, setAgencies, newAgency.trim(), () => setNewAgency(''));
-                          }
-                        }
-                      }}
-                      disabled={agencies.length >= 20}
-                    />
-                    <Button
-                      onClick={() => {
-                        if (newAgency.trim()) {
-                          addItem(agencies, setAgencies, newAgency.trim(), () => setNewAgency(''));
-                        }
-                      }}
-                      icon={<PlusIcon className="h-5 w-5" />}
-                      disabled={agencies.length >= 20 || !newAgency.trim()}
-                    >
-                      Add
-                    </Button>
-                  </div>
-
-                  {agencies.length >= 20 && (
-                    <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                      <p className="text-sm text-yellow-300">
-                        Maximum of 20 agencies reached.
-                      </p>
-                    </div>
-                  )}
-
-                  {agencies.length > 0 ? (
-                    <div className="space-y-2">
-                      {agencies.map((agency) => (
-                        <div
-                          key={agency}
-                          className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                  {hasAgencies ? (
+                    <>
+                      <div className="flex gap-2 mb-4">
+                        <Input
+                          placeholder="Add an agency..."
+                          value={newAgency}
+                          onChange={(e) => setNewAgency(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && newAgency.trim()) {
+                              e.preventDefault();
+                              if (agencies.length < 20) {
+                                addItem(agencies, setAgencies, newAgency.trim(), () => setNewAgency(''));
+                              }
+                            }
+                          }}
+                          disabled={agencies.length >= 20}
+                        />
+                        <Button
+                          onClick={() => {
+                            if (newAgency.trim()) {
+                              addItem(agencies, setAgencies, newAgency.trim(), () => setNewAgency(''));
+                            }
+                          }}
+                          icon={<PlusIcon className="h-5 w-5" />}
+                          disabled={agencies.length >= 20 || !newAgency.trim()}
                         >
-                          <span className="text-white">{agency}</span>
-                          <button
-                            onClick={() => removeItem(agencies, setAgencies, agency)}
-                            className="text-red-400 hover:text-red-300"
-                          >
-                            <XMarkIcon className="h-5 w-5" />
-                          </button>
+                          Add
+                        </Button>
+                      </div>
+
+                      {agencies.length >= 20 && (
+                        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                          <p className="text-sm text-yellow-300">
+                            Maximum of 20 agencies reached.
+                          </p>
                         </div>
-                      ))}
-                    </div>
+                      )}
+
+                      {agencies.length > 0 ? (
+                        <div className="space-y-2">
+                          {agencies.map((agency) => (
+                            <div
+                              key={agency}
+                              className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                            >
+                              <span className="text-white">{agency}</span>
+                              <button
+                                onClick={() => removeItem(agencies, setAgencies, agency)}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                <XMarkIcon className="h-5 w-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
+                          <SparklesIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
+                          <p className="text-gray-400 text-sm">No agencies added yet</p>
+                          <p className="text-gray-500 text-xs mt-1">Add agencies you&#39;ve worked with to boost matching</p>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
                       <SparklesIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
-                      <p className="text-gray-400 text-sm">No agencies added yet</p>
-                      <p className="text-gray-500 text-xs mt-1">Add agencies you&#39;ve worked with to boost matching</p>
+                      <p className="text-gray-400 text-sm">No past performance agencies provided</p>
                     </div>
                   )}
+
+                  <button
+                    onClick={() => setHasAgencies(!hasAgencies)}
+                    className="mt-4 px-3 py-2 bg-gray-500/20 text-gray-400 rounded-lg text-sm hover:bg-gray-500/30 transition-colors"
+                  >
+                    {hasAgencies ? 'Mark as None' : 'Add Agencies'}
+                  </button>
                 </div>
               )}
 
