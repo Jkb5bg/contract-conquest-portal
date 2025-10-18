@@ -52,9 +52,9 @@ export default function EnhancedDashboard() {
       // Basic Info (15%)
       if (profileData.company_name && profileData.email) score += 15;
 
-      // Identifiers (15%) - give credit if they have CAGE/UEI OR if they've indicated they don't have them
+      // Identifiers (15%) - give credit if they have CAGE/UEI OR if they've explicitly marked as not having them
       const hasIdentifiers = profileData.cage_code || profileData.uei;
-      const identifiersMarkedNone = profileData.has_identifiers === false; // This would need to be tracked in the API
+      const identifiersMarkedNone = !profileData.cage_code && !profileData.uei && profileData.has_identifiers === false;
       if (hasIdentifiers || identifiersMarkedNone) score += 15;
 
       // NAICS Codes (15%)
