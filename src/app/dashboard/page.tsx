@@ -19,6 +19,8 @@ import {
   ArrowRightIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { computeProfileCompleteness } from '@/lib/profileCompleteness';
+
 
 export default function EnhancedDashboard() {
   const [recentOpportunities, setRecentOpportunities] = useState<Opportunity[]>([]);
@@ -43,42 +45,10 @@ export default function EnhancedDashboard() {
 
   const fetchProfileCompleteness = async () => {
     try {
-      const profileRes = await apiClient.get('/profile/me');
-      const profileData = profileRes.data;
-
-      // Calculate completeness - consistent with profile page
-      let score = 0;
-
-      // Basic Info (15%)
-      if (profileData.company_name && profileData.email) score += 15;
-
-      // Identifiers (15%) - give credit if they have CAGE/UEI OR if they've explicitly marked as not having them
-      const hasIdentifiers = profileData.cage_code || profileData.uei;
-      const identifiersMarkedNone = !profileData.cage_code && !profileData.uei && profileData.has_identifiers === false;
-      if (hasIdentifiers || identifiersMarkedNone) score += 15;
-
-      // NAICS Codes (15%)
-      if (profileData.primary_naics && profileData.primary_naics.length > 0) score += 15;
-
-      // Capabilities (20%) - give credit if they have 3+ OR if marked as "None"
-      const hasCapabilities = profileData.capabilities && profileData.capabilities.length >= 3;
-      const capabilitiesMarkedNone = profileData.has_capabilities === false;
-      if (hasCapabilities || capabilitiesMarkedNone) score += 20;
-
-      // Experience/Agencies (15%) - give credit if they have any OR if marked as "None"
-      const hasAgencies = profileData.past_performance_agencies && profileData.past_performance_agencies.length > 0;
-      const agenciesMarkedNone = profileData.has_agencies === false;
-      if (hasAgencies || agenciesMarkedNone) score += 15;
-
-      // Geographic Preferences (10%)
-      if (profileData.geographic_preferences && profileData.geographic_preferences.length > 0) score += 10;
-
-      // Set-Aside Eligibilities (10%)
-      if (profileData.set_aside_eligibilities && profileData.set_aside_eligibilities.length > 0) score += 10;
-
-      setProfileCompleteness(score);
-    } catch (error) {
-      console.error('Failed to fetch profile completeness:', error);
+      const { data } = await apiClient.get('/profile/me');
+      setProfileCompleteness(computeProfileCompleteness(data));
+    } catch (e) {
+      console.error('Failed to fetch profile completeness:', e);
     }
   };
 

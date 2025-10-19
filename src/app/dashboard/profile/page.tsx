@@ -26,7 +26,14 @@ import {
   SparklesIcon,
   ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
-import {InformationCircleIcon} from "@heroicons/react/16/solid";
+import { InformationCircleIcon } from "@heroicons/react/16/solid";
+import {
+  computeProfileCompleteness,
+  computeSectionCompleteness,
+  buildProfilePayload,
+  type ProfileForCompleteness,
+  type SectionCompleteness,
+} from '@/lib/profileCompleteness';
 
 export default function ConsistentProfilePage() {
   const [profile, setProfile] = useState<ClientProfile | null>(null);
@@ -39,14 +46,19 @@ export default function ConsistentProfilePage() {
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [newCapability, setNewCapability] = useState('');
   const [hasCapabilities, setHasCapabilities] = useState(true);
+
   const [agencies, setAgencies] = useState<string[]>([]);
   const [newAgency, setNewAgency] = useState('');
   const [hasAgencies, setHasAgencies] = useState(true);
+
   const [naicsPrimary, setNaicsPrimary] = useState<string[]>([]);
   const [newNaics, setNewNaics] = useState('');
+
   const [geographicPreferences, setGeographicPreferences] = useState<string[]>([]);
   const [newGeographic, setNewGeographic] = useState('');
+
   const [setAsideEligibilities, setSetAsideEligibilities] = useState<string[]>([]);
+
   const [cageCodeProvided, setCageCodeProvided] = useState(true);
   const [ueiProvided, setUeiProvided] = useState(true);
 
@@ -60,15 +72,22 @@ export default function ConsistentProfilePage() {
       const response = await apiClient.get('/profile/me');
       const profileData = response.data;
       setProfile(profileData);
+
+      // Initialize all form states from backend data
       setCapabilities(profileData.capabilities || []);
-      setHasCapabilities(profileData.has_capabilities !== false); // Default to true if not specified
+      setHasCapabilities(profileData.has_capabilities !== false);
+
       setAgencies(profileData.past_performance_agencies || []);
-      setHasAgencies(profileData.has_agencies !== false); // Default to true if not specified
+      setHasAgencies(profileData.has_agencies !== false);
+
       setNaicsPrimary(profileData.primary_naics || []);
+
       setGeographicPreferences(profileData.geographic_preferences || []);
+
       setSetAsideEligibilities(profileData.set_aside_eligibilities || []);
-      setCageCodeProvided(profileData.has_identifiers !== false && !!(profileData.cage_code) || profileData.has_identifiers === true);
-      setUeiProvided(profileData.has_identifiers !== false && !!(profileData.uei) || profileData.has_identifiers === true);
+
+      setCageCodeProvided(!!(profileData.cage_code && profileData.cage_code.trim()) || profileData.has_identifiers === true);
+      setUeiProvided(!!(profileData.uei && profileData.uei.trim()) || profileData.has_identifiers === true);
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     } finally {
@@ -76,26 +95,65 @@ export default function ConsistentProfilePage() {
     }
   };
 
+  /**
+   * Build current payload from form state
+   * This is what would be sent to the backend on save
+   * Used for calculating completeness scores
+   */
+  const buildCurrentPayload = (): ProfileForCompleteness => {
+    return buildProfilePayload({
+      company_name: profile?.company_name,
+      email: profile?.email,
+      cage_code: cageCodeProvided ? profile?.cage_code : null,
+      uei: ueiProvided ? profile?.uei : null,
+      has_identifiers: cageCodeProvided || ueiProvided ? true : false,
+      capabilities: hasCapabilities ? capabilities : [],
+      has_capabilities: hasCapabilities,
+      past_performance_agencies: hasAgencies ? agencies : [],
+      has_agencies: hasAgencies,
+      primary_naics: naicsPrimary,
+      geographic_preferences: geographicPreferences,
+      set_aside_eligibilities: setAsideEligibilities,
+    });
+  };
+
+  /**
+   * Calculate completeness from current form state
+   * This ensures the profile page always shows what the backend will see
+   */
+  const calculateCompleteness = (): number => {
+    return computeProfileCompleteness(buildCurrentPayload());
+  };
+
+  /**
+   * Get section completion status
+   * Used to show checkmarks in navigation
+   */
+  const getSectionCompleteness = (): SectionCompleteness => {
+    return computeSectionCompleteness(buildCurrentPayload());
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      await apiClient.put('/profile/update', {
-        ...profile,
-        capabilities: hasCapabilities ? capabilities : [],
-        has_capabilities: hasCapabilities, // Track whether they have capabilities or marked as "None"
-        past_performance_agencies: hasAgencies ? agencies : [],
-        has_agencies: hasAgencies, // Track whether they have agencies or marked as "None"
-        primary_naics: naicsPrimary,
-        geographic_preferences: geographicPreferences,
-        set_aside_eligibilities: setAsideEligibilities,
-        cage_code: cageCodeProvided ? profile?.cage_code : null,
-        uei: ueiProvided ? profile?.uei : null,
-        has_identifiers: cageCodeProvided || ueiProvided, // Track whether they provided identifiers
-      });
+      const payload = buildCurrentPayload();
+
+      await apiClient.put('/profile/update', payload);
+
+      // Update local profile state to reflect what was saved
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      setProfile(prev => prev ? { ...prev, ...payload } : null);
+
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
+
+      // Notify dashboard to refresh (event dispatch)
+      window.dispatchEvent(new Event('profile-updated'));
+
       setTimeout(() => setMessage({ type: '', text: '' }), 3000);
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to update profile' });
+      console.error('Save failed:', error);
     } finally {
       setSaving(false);
     }
@@ -118,36 +176,6 @@ export default function ConsistentProfilePage() {
     } else {
       setSetAsideEligibilities([...setAsideEligibilities, value]);
     }
-  };
-
-  const calculateCompleteness = () => {
-    if (!profile) return 0;
-    let score = 0;
-
-    // Basic Info (15%)
-    if (profile.company_name && profile.email) score += 15;
-
-    // Identifiers (15%) - give credit if they have CAGE/UEI OR if they've marked as "None"
-    const hasIdentifiers = profile.cage_code || profile.uei;
-    const identifiersMarkedNone = !cageCodeProvided && !ueiProvided;
-    if (hasIdentifiers || identifiersMarkedNone) score += 15;
-
-    // NAICS Codes (15%)
-    if (naicsPrimary.length > 0) score += 15;
-
-    // Capabilities (20%) - give credit if they have 3+ OR if marked as "None"
-    if (capabilities.length >= 3 || !hasCapabilities) score += 20;
-
-    // Experience/Agencies (15%) - give credit if they have any OR if marked as "None"
-    if (agencies.length > 0 || !hasAgencies) score += 15;
-
-    // Geographic Preferences (10%)
-    if (geographicPreferences.length > 0) score += 10;
-
-    // Set-Aside Eligibilities (10%)
-    if (setAsideEligibilities.length > 0) score += 10;
-
-    return score;
   };
 
   const sections = [
@@ -182,7 +210,9 @@ export default function ConsistentProfilePage() {
     return <LoadingSpinner size="lg" />;
   }
 
+  // Calculate these ONCE at render time, using the single source of truth
   const completeness = calculateCompleteness();
+  const sectionComplete = getSectionCompleteness();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -216,32 +246,33 @@ export default function ConsistentProfilePage() {
       )}
 
       <div className="grid grid-cols-12 gap-6">
-        {/* Section Navigation */}
+        {/* Section Navigation - Checkmarks show from SINGLE CALCULATION */}
         <div className="col-span-3">
           <Card>
             <CardBody>
               <nav className="space-y-1">
-                {sections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center px-4 py-3 rounded-lg transition-all ${
-                      activeSection === section.id
-                        ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
-                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                    }`}
-                  >
-                    <section.icon className="h-5 w-5 mr-3" />
-                    <span className="font-medium">{section.label}</span>
-                    {((section.id === 'capabilities' && (capabilities.length >= 3 || !hasCapabilities)) ||
-                      (section.id === 'identifiers' && (profile.cage_code || profile.uei || (!cageCodeProvided && !ueiProvided))) ||
-                      (section.id === 'experience' && (agencies.length > 0 || !hasAgencies)) ||
-                      (section.id === 'preferences' && geographicPreferences.length > 0) ||
-                      (section.id === 'certifications' && setAsideEligibilities.length > 0)) && (
-                      <CheckCircleIcon className="h-4 w-4 ml-auto text-green-400" />
-                    )}
-                  </button>
-                ))}
+                {sections.map((section) => {
+                  const isComplete = sectionComplete[section.id as keyof SectionCompleteness];
+                  const isActive = activeSection === section.id;
+
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => setActiveSection(section.id)}
+                      className={`w-full flex items-center px-4 py-3 rounded-lg transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
+                          : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <section.icon className="h-5 w-5 mr-3" />
+                      <span className="font-medium">{section.label}</span>
+                      {isComplete && (
+                        <CheckCircleIcon className="h-4 w-4 ml-auto text-green-400" />
+                      )}
+                    </button>
+                  );
+                })}
               </nav>
             </CardBody>
           </Card>
@@ -355,109 +386,111 @@ export default function ConsistentProfilePage() {
                       </div>
                     </div>
                   </div>
+                </>
+              )}
 
-                  <div>
-                    <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-start">
-                      <InformationCircleIcon className="h-5 w-5 text-blue-400 mr-3 mt-0.5 flex-shrink-0" />
-                      <div className="text-sm text-blue-300">
-                        <p className="font-medium mb-1">NAICS Code Tips:</p>
-                        <ul className="list-disc list-inside space-y-1 text-blue-200">
-                          <li>Add 3-10 codes that best represent your business</li>
-                          <li>Your primary NAICS should match your SAM.gov registration</li>
-                          <li>More focused codes = better opportunity matching</li>
-                          <li>Examples: 541512 (Computer Systems Design), 541330 (Engineering)</li>
-                        </ul>
-                        <a
-                          href="https://www.naics.com/search-naics-codes-by-industry/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 mt-2 text-blue-300 hover:text-blue-200 font-medium"
-                        >
-                          Find your NAICS code
-                          <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-                        </a>
-                      </div>
+              {/* NAICS Codes */}
+              {activeSection === 'identifiers' && (
+                <div>
+                  <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-start">
+                    <InformationCircleIcon className="h-5 w-5 text-blue-400 mr-3 mt-0.5 flex-shrink-0" />
+                    <div className="text-sm text-blue-300">
+                      <p className="font-medium mb-1">NAICS Code Tips:</p>
+                      <ul className="list-disc list-inside space-y-1 text-blue-200">
+                        <li>Add 3-10 codes that best represent your business</li>
+                        <li>Your primary NAICS should match your SAM.gov registration</li>
+                        <li>More focused codes = better opportunity matching</li>
+                        <li>Examples: 541512 (Computer Systems Design), 541330 (Engineering)</li>
+                      </ul>
+                      <a
+                        href="https://www.naics.com/search-naics-codes-by-industry/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 mt-2 text-blue-300 hover:text-blue-200 font-medium"
+                      >
+                        Find your NAICS code
+                        <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                      </a>
                     </div>
+                  </div>
 
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Primary NAICS Codes ({naicsPrimary.length}/10)
-                    </label>
-                    <div className="flex gap-2 mb-3">
-                      <Input
-                        placeholder="6-digit NAICS (e.g., 541512)"
-                        maxLength={6}
-                        value={newNaics}
-                        onChange={(e) => {
-                          // Only allow numbers
-                          const value = e.target.value.replace(/[^0-9]/g, '');
-                          setNewNaics(value);
-                        }}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (naicsPrimary.length < 10 && newNaics.length === 6) {
-                              addItem(naicsPrimary, setNaicsPrimary, newNaics, () => setNewNaics(''));
-                            }
-                          }
-                        }}
-                        disabled={naicsPrimary.length >= 10}
-                      />
-                      <Button
-                        onClick={() => {
-                          if (newNaics.length === 6) {
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Primary NAICS Codes ({naicsPrimary.length}/10)
+                  </label>
+                  <div className="flex gap-2 mb-3">
+                    <Input
+                      placeholder="6-digit NAICS (e.g., 541512)"
+                      maxLength={6}
+                      value={newNaics}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        setNewNaics(value);
+                      }}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (naicsPrimary.length < 10 && newNaics.length === 6) {
                             addItem(naicsPrimary, setNaicsPrimary, newNaics, () => setNewNaics(''));
                           }
-                        }}
-                        icon={<PlusIcon className="h-5 w-5" />}
-                        disabled={naicsPrimary.length >= 10 || newNaics.length !== 6}
-                      >
-                        Add
-                      </Button>
-                    </div>
-
-                    {newNaics.length > 0 && newNaics.length < 6 && (
-                      <p className="text-xs text-yellow-400 mb-3">
-                        NAICS codes must be exactly 6 digits
-                      </p>
-                    )}
-
-                    {naicsPrimary.length >= 10 && (
-                      <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                        <p className="text-sm text-yellow-300">
-                          Maximum of 10 NAICS codes reached. Remove one to add another.
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-2">
-                      {naicsPrimary.map((naics) => (
-                        <Badge key={naics} variant="primary">
-                          {naics}
-                          <button
-                            onClick={() => removeItem(naicsPrimary, setNaicsPrimary, naics)}
-                            className="ml-2 hover:text-white"
-                          >
-                            <XMarkIcon className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-
-                    {naicsPrimary.length === 0 && (
-                      <div className="mt-3 text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
-                        <IdentificationIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
-                        <p className="text-gray-400 text-sm">No NAICS codes added yet</p>
-                        <p className="text-gray-500 text-xs mt-1">Add at least one to improve matching</p>
-                      </div>
-                    )}
-
-                    {naicsPrimary.length > 0 && naicsPrimary.length < 3 && (
-                      <p className="text-sm text-yellow-400 mt-3">
-                        Add at least 3 NAICS codes for optimal opportunity matching
-                      </p>
-                    )}
+                        }
+                      }}
+                      disabled={naicsPrimary.length >= 10}
+                    />
+                    <Button
+                      onClick={() => {
+                        if (newNaics.length === 6) {
+                          addItem(naicsPrimary, setNaicsPrimary, newNaics, () => setNewNaics(''));
+                        }
+                      }}
+                      icon={<PlusIcon className="h-5 w-5" />}
+                      disabled={naicsPrimary.length >= 10 || newNaics.length !== 6}
+                    >
+                      Add
+                    </Button>
                   </div>
-                </>
+
+                  {newNaics.length > 0 && newNaics.length < 6 && (
+                    <p className="text-xs text-yellow-400 mb-3">
+                      NAICS codes must be exactly 6 digits
+                    </p>
+                  )}
+
+                  {naicsPrimary.length >= 10 && (
+                    <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <p className="text-sm text-yellow-300">
+                        Maximum of 10 NAICS codes reached. Remove one to add another.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    {naicsPrimary.map((naics) => (
+                      <Badge key={naics} variant="primary">
+                        {naics}
+                        <button
+                          onClick={() => removeItem(naicsPrimary, setNaicsPrimary, naics)}
+                          className="ml-2 hover:text-white"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+
+                  {naicsPrimary.length === 0 && (
+                    <div className="mt-3 text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
+                      <IdentificationIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
+                      <p className="text-gray-400 text-sm">No NAICS codes added yet</p>
+                      <p className="text-gray-500 text-xs mt-1">Add at least one to improve matching</p>
+                    </div>
+                  )}
+
+                  {naicsPrimary.length > 0 && naicsPrimary.length < 3 && (
+                    <p className="text-sm text-yellow-400 mt-3">
+                      Add at least 3 NAICS codes for optimal opportunity matching
+                    </p>
+                  )}
+                </div>
               )}
 
               {/* Capabilities */}
