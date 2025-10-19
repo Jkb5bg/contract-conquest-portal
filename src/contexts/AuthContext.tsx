@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { User, LoginResponse } from '@/types/auth';
@@ -8,7 +8,6 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isPasswordTemporary: boolean;
-  tokenExpiresAt: number | null; // Unix timestamp in seconds
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
@@ -20,7 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * Decode a JWT token to extract claims
  * WARNING: This decodes without verification. Verification happens on the backend.
  */
-function decodeJWT(token: string): Record<string, never> | null {
+function decodeJWT(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
@@ -40,42 +39,95 @@ function decodeJWT(token: string): Record<string, never> | null {
 function getTokenExpiration(token: string): number | null {
   const decoded = decodeJWT(token);
   if (decoded && decoded.exp) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     return decoded.exp;
   }
   return null;
-}
-
-/**
- * Check if token is expired or expiring soon (within 5 minutes)
- */
-function isTokenExpiredOrExpiringSoon(expiresAt: number | null): boolean {
-  if (!expiresAt) return true;
-
-  const now = Math.floor(Date.now() / 1000);
-  const fiveMinutesInSeconds = 5 * 60;
-
-  return now >= (expiresAt - fiveMinutesInSeconds);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordTemporary, setIsPasswordTemporary] = useState(false);
-  const [tokenExpiresAt, setTokenExpiresAt] = useState<number | null>(null);
-  const [refreshTimeout, setRefreshTimeout] = useState<NodeJS.Timeout | null>(null);
   const router = useRouter();
+
+  // Use refs to avoid infinite loops with timeouts
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isRefreshingRef = useRef(false);
+
+  /**
+   * Attempt to refresh the token
+   * Uses ref to prevent concurrent refresh attempts
+   */
+  const attemptTokenRefresh = useCallback(async () => {
+    // Prevent concurrent refresh attempts
+    if (isRefreshingRef.current) {
+      console.log('Token refresh already in progress, skipping...');
+      return;
+    }
+
+    try {
+      isRefreshingRef.current = true;
+      console.log('Attempting token refresh...');
+
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        console.log('No refresh token available');
+        return;
+      }
+
+      const response = await apiClient.post('/auth/refresh', null, {
+        headers: {
+          Authorization: `Bearer ${refreshToken}`,
+        },
+      });
+
+      const { access_token } = response.data;
+      localStorage.setItem('access_token', access_token);
+      console.log('Token refreshed successfully');
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      // On refresh failure, logout the user
+      localStorage.clear();
+      setUser(null);
+      setIsPasswordTemporary(false);
+      router.push('/login');
+    } finally {
+      isRefreshingRef.current = false;
+    }
+  }, [router]);
+
+  /**
+   * Cancel any pending token refresh
+   */
+  const cancelTokenRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = null;
+      console.log('Cancelled pending token refresh');
+    }
+  }, []);
 
   /**
    * Schedule a token refresh before it expires
-   * Refreshes when there's 10 minutes left
+   * IMPORTANT: Only call this once per token, not on every render
    */
   const scheduleTokenRefresh = useCallback((expiresAt: number) => {
-    // Clear any existing timeout
-    if (refreshTimeout) {
-      clearTimeout(refreshTimeout);
-    }
+    // Cancel any existing refresh schedule
+    cancelTokenRefresh();
 
     const now = Math.floor(Date.now() / 1000);
+    const timeUntilExpiration = expiresAt - now;
+
+    // If token is already expired or expiring in less than 2 minutes, refresh now
+    if (timeUntilExpiration <= 120) {
+      console.log('Token expiring soon, refreshing now');
+      attemptTokenRefresh();
+      return;
+    }
+
+    // Schedule refresh for 10 minutes before expiration
     const tenMinutesInSeconds = 10 * 60;
     const refreshAt = expiresAt - tenMinutesInSeconds;
     const millisecondsUntilRefresh = Math.max(0, (refreshAt - now) * 1000);
@@ -83,104 +135,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log(`Token expires at: ${new Date(expiresAt * 1000).toISOString()}`);
     console.log(`Scheduled refresh in: ${(millisecondsUntilRefresh / 1000 / 60).toFixed(2)} minutes`);
 
-    const timeout = setTimeout(async () => {
-      console.log('Proactively refreshing token...');
-      try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-          const response = await apiClient.post('/auth/refresh', null, {
-            headers: {
-              Authorization: `Bearer ${refreshToken}`,
-            },
-          });
+    refreshTimeoutRef.current = setTimeout(async () => {
+      console.log('Token refresh scheduled time reached');
+      await attemptTokenRefresh();
 
-          const { access_token } = response.data;
-          localStorage.setItem('access_token', access_token);
-
-          const newExpiresAt = getTokenExpiration(access_token);
-          if (newExpiresAt) {
-            setTokenExpiresAt(newExpiresAt);
-            scheduleTokenRefresh(newExpiresAt); // Schedule next refresh
-            console.log('Token refreshed successfully');
-          }
+      // After refresh, get new token and reschedule
+      const newToken = localStorage.getItem('access_token');
+      if (newToken) {
+        const newExpiresAt = getTokenExpiration(newToken);
+        if (newExpiresAt) {
+          scheduleTokenRefresh(newExpiresAt);
         }
-      } catch (error) {
-        console.error('Token refresh failed:', error);
-        // If refresh fails, logout the user
-        localStorage.clear();
-        setUser(null);
-        setTokenExpiresAt(null);
-        router.push('/login');
       }
     }, millisecondsUntilRefresh);
-
-    setRefreshTimeout(timeout);
-  }, [refreshTimeout, router]);
+  }, [attemptTokenRefresh, cancelTokenRefresh]);
 
   // Check for existing session on mount
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem('access_token');
-      const storedUser = localStorage.getItem('user');
+      try {
+        const token = localStorage.getItem('access_token');
+        const storedUser = localStorage.getItem('user');
 
-      if (token && storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
+        if (token && storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
 
-          // Get token expiration
-          const expiresAt = getTokenExpiration(token);
-          if (expiresAt) {
-            setTokenExpiresAt(expiresAt);
-
-            // If token is expired or expiring soon, refresh it now
-            if (isTokenExpiredOrExpiringSoon(expiresAt)) {
-              console.log('Existing token is expired or expiring soon, attempting refresh...');
-              try {
-                const refreshToken = localStorage.getItem('refresh_token');
-                if (refreshToken) {
-                  const response = await apiClient.post('/auth/refresh', null, {
-                    headers: {
-                      Authorization: `Bearer ${refreshToken}`,
-                    },
-                  });
-
-                  const { access_token } = response.data;
-                  localStorage.setItem('access_token', access_token);
-                  const newExpiresAt = getTokenExpiration(access_token);
-                  if (newExpiresAt) {
-                    setTokenExpiresAt(newExpiresAt);
-                    scheduleTokenRefresh(newExpiresAt);
-                  }
-                }
-              } catch (refreshError) {
-                console.error('Failed to refresh token on init:', refreshError);
-                localStorage.clear();
-                setUser(null);
-                setTokenExpiresAt(null);
+            // Schedule token refresh if we have a token
+            const expiresAt = getTokenExpiration(token);
+            if (expiresAt) {
+              const now = Math.floor(Date.now() / 1000);
+              if (now >= expiresAt - 60) {
+                // Token expired or expiring in less than 1 minute, refresh now
+                console.log('Existing token expired or expiring, attempting refresh...');
+                await attemptTokenRefresh();
+              } else {
+                // Schedule refresh for later
+                scheduleTokenRefresh(expiresAt);
               }
-            } else {
-              // Schedule refresh for later
-              scheduleTokenRefresh(expiresAt);
             }
+          } catch (parseError) {
+            console.error('Failed to parse stored user:', parseError);
+            localStorage.clear();
           }
-        } catch (error) {
-          console.error('Failed to initialize auth:', error);
-          localStorage.clear();
         }
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     initAuth();
 
     // Cleanup on unmount
     return () => {
-      if (refreshTimeout) {
-        clearTimeout(refreshTimeout);
-      }
+      cancelTokenRefresh();
     };
-  }, [scheduleTokenRefresh]);
+  }, []); // Empty dependency array - runs only once on mount
 
   const login = useCallback(async (email: string, password: string) => {
     try {
@@ -198,7 +208,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Get token expiration and schedule refresh
       const expiresAt = getTokenExpiration(data.access_token);
       if (expiresAt) {
-        setTokenExpiresAt(expiresAt);
         scheduleTokenRefresh(expiresAt);
       }
 
@@ -210,7 +219,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
 
       localStorage.setItem('user', JSON.stringify(userInfo));
-
       setUser(userInfo);
       setIsPasswordTemporary(data.is_password_temporary);
 
@@ -229,17 +237,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [scheduleTokenRefresh, router]);
 
   const logout = useCallback(() => {
-    if (refreshTimeout) {
-      clearTimeout(refreshTimeout);
-    }
+    cancelTokenRefresh();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     setUser(null);
     setIsPasswordTemporary(false);
-    setTokenExpiresAt(null);
     router.push('/login');
-  }, [refreshTimeout, router]);
+  }, [cancelTokenRefresh, router]);
 
   const changePassword = useCallback(async (oldPassword: string, newPassword: string) => {
     try {
@@ -264,7 +269,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         isPasswordTemporary,
-        tokenExpiresAt,
         login,
         logout,
         changePassword,

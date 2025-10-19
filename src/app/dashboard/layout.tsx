@@ -30,11 +30,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Protect the dashboard - redirect to login if not authenticated
   useEffect(() => {
-    if (!isLoading && !user) {
+    // Only check if loading is complete
+    if (isLoading) {
+      return;
+    }
+
+    // Only redirect if user is actually not set (and loading is done)
+    if (!user) {
+      console.log('No user found, redirecting to login');
       router.push('/login');
     }
-  }, [user, isLoading, router]);
-
+  }, [isLoading, user, router]);
 
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
 
@@ -64,7 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-    // Don't render dashboard if not authenticated
+  // Don't render dashboard if not authenticated
   if (!user) {
     return null;
   }
