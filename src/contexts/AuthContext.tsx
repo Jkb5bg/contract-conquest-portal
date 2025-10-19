@@ -15,6 +15,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Maximum safe setTimeout delay (about 24.8 days in milliseconds)
+const MAX_TIMEOUT_MS = 2147483647;
+
 /**
  * Decode a JWT token to extract claims
  * WARNING: This decodes without verification. Verification happens on the backend.
@@ -39,9 +42,7 @@ function decodeJWT(token: string): Record<string, unknown> | null {
 function getTokenExpiration(token: string): number | null {
   const decoded = decodeJWT(token);
   if (decoded && decoded.exp) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    return decoded.exp;
+    return decoded.exp as number;
   }
   return null;
 }
@@ -86,6 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { access_token } = response.data;
       localStorage.setItem('access_token', access_token);
       console.log('Token refreshed successfully');
+
+      // Schedule next refresh
+      const expiresAt = getTokenExpiration(access_token);
+      if (expiresAt) {
+        scheduleTokenRefresh(expiresAt);
+      }
     } catch (error) {
       console.error('Token refresh failed:', error);
       // On refresh failure, logout the user
@@ -111,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Schedule a token refresh before it expires
-   * IMPORTANT: Only call this once per token, not on every render
+   * Handles long-lived tokens by respecting setTimeout max delay
    */
   const scheduleTokenRefresh = useCallback((expiresAt: number) => {
     // Cancel any existing refresh schedule
@@ -120,6 +127,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const now = Math.floor(Date.now() / 1000);
     const timeUntilExpiration = expiresAt - now;
 
+    console.log(`Token expires at: ${new Date(expiresAt * 1000).toISOString()}`);
+    console.log(`Time until expiration: ${(timeUntilExpiration / 60 / 60 / 24).toFixed(1)} days`);
+
     // If token is already expired or expiring in less than 2 minutes, refresh now
     if (timeUntilExpiration <= 120) {
       console.log('Token expiring soon, refreshing now');
@@ -127,26 +137,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Schedule refresh for 10 minutes before expiration
+    // For long-lived tokens (> 7 days), don't schedule automatic refresh
+    // User will need to refresh manually or it will refresh on next app load
+    const sevenDaysInSeconds = 7 * 24 * 60 * 60;
+    if (timeUntilExpiration > sevenDaysInSeconds) {
+      console.log('Token is long-lived (> 7 days), no automatic refresh scheduled');
+      console.log('Token will be checked on next app load or page refresh');
+      return;
+    }
+
+    // Schedule refresh for 10 minutes before expiration (only for tokens < 7 days)
     const tenMinutesInSeconds = 10 * 60;
     const refreshAt = expiresAt - tenMinutesInSeconds;
     const millisecondsUntilRefresh = Math.max(0, (refreshAt - now) * 1000);
 
-    console.log(`Token expires at: ${new Date(expiresAt * 1000).toISOString()}`);
+    // Double-check we're not exceeding setTimeout max
+    if (millisecondsUntilRefresh > MAX_TIMEOUT_MS) {
+      console.log('Refresh time exceeds setTimeout max, will check on next load');
+      return;
+    }
+
     console.log(`Scheduled refresh in: ${(millisecondsUntilRefresh / 1000 / 60).toFixed(2)} minutes`);
 
     refreshTimeoutRef.current = setTimeout(async () => {
       console.log('Token refresh scheduled time reached');
       await attemptTokenRefresh();
-
-      // After refresh, get new token and reschedule
-      const newToken = localStorage.getItem('access_token');
-      if (newToken) {
-        const newExpiresAt = getTokenExpiration(newToken);
-        if (newExpiresAt) {
-          scheduleTokenRefresh(newExpiresAt);
-        }
-      }
     }, millisecondsUntilRefresh);
   }, [attemptTokenRefresh, cancelTokenRefresh]);
 
@@ -161,17 +176,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             setUser(JSON.parse(storedUser));
 
-            // Schedule token refresh if we have a token
+            // Check token expiration
             const expiresAt = getTokenExpiration(token);
             if (expiresAt) {
               const now = Math.floor(Date.now() / 1000);
-              if (now >= expiresAt - 60) {
-                // Token expired or expiring in less than 1 minute, refresh now
-                console.log('Existing token expired or expiring, attempting refresh...');
+
+              // If token is expired, refresh it
+              if (now >= expiresAt) {
+                console.log('Token expired, attempting refresh...');
                 await attemptTokenRefresh();
-              } else {
-                // Schedule refresh for later
+              }
+              // If token expires in less than 1 day, schedule refresh
+              else if (expiresAt - now < 24 * 60 * 60) {
+                console.log('Token expires in less than 24 hours, scheduling refresh');
                 scheduleTokenRefresh(expiresAt);
+              }
+              // Otherwise just log that we have a valid long-lived token
+              else {
+                const daysUntilExpiry = (expiresAt - now) / (24 * 60 * 60);
+                console.log(`Token valid for ${daysUntilExpiry.toFixed(1)} more days`);
               }
             }
           } catch (parseError) {
@@ -190,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelTokenRefresh();
     };
-  }, []); // Empty dependency array - runs only once on mount
+  }, [attemptTokenRefresh, scheduleTokenRefresh, cancelTokenRefresh]);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
@@ -205,10 +228,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
 
-      // Get token expiration and schedule refresh
+      // Get token expiration and schedule refresh if needed
       const expiresAt = getTokenExpiration(data.access_token);
       if (expiresAt) {
-        scheduleTokenRefresh(expiresAt);
+        const now = Math.floor(Date.now() / 1000);
+        const daysUntilExpiry = (expiresAt - now) / (24 * 60 * 60);
+        console.log(`New token valid for ${daysUntilExpiry.toFixed(1)} days`);
+
+        // Only schedule refresh for tokens expiring in < 7 days
+        if (daysUntilExpiry < 7) {
+          scheduleTokenRefresh(expiresAt);
+        }
       }
 
       // Create user object
@@ -231,7 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: unknown) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
-      const message = error.response?.data?.detail || 'Login failed';
+      const message = (error as unknown).response?.data?.detail || 'Login failed';
       throw new Error(message);
     }
   }, [scheduleTokenRefresh, router]);
@@ -258,7 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: unknown) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
-      const message = error.response?.data?.detail || 'Failed to change password';
+      const message = (error as unknown).response?.data?.detail || 'Failed to change password';
       throw new Error(message);
     }
   }, [router]);
