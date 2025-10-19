@@ -46,7 +46,20 @@ export default function EnhancedDashboard() {
   const fetchProfileCompleteness = async () => {
     try {
       const { data } = await apiClient.get('/profile/me');
-      setProfileCompleteness(computeProfileCompleteness(data));
+
+      // Normalize the backend data to match what the profile page expects
+      // This ensures consistent completeness calculations between dashboard and profile page
+      const normalizedData = {
+        ...data,
+        // If has_capabilities is undefined, treat as true (user hasn't explicitly said they have none)
+        has_capabilities: data.has_capabilities !== false,
+        // If has_agencies is undefined, treat as true (user hasn't explicitly said they have none)
+        has_agencies: data.has_agencies !== false,
+        // If either identifier exists, or has_identifiers is true, consider it provided
+        has_identifiers: !!(data.cage_code || data.uei) || data.has_identifiers === true,
+      };
+
+      setProfileCompleteness(computeProfileCompleteness(normalizedData));
     } catch (e) {
       console.error('Failed to fetch profile completeness:', e);
     }
