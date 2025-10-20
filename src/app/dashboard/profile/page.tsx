@@ -58,6 +58,7 @@ export default function ConsistentProfilePage() {
   const [newGeographic, setNewGeographic] = useState('');
 
   const [setAsideEligibilities, setSetAsideEligibilities] = useState<string[]>([]);
+  const [hasSetAsides, setHasSetAsides] = useState(true);
 
   const [cageCodeProvided, setCageCodeProvided] = useState(true);
   const [ueiProvided, setUeiProvided] = useState(true);
@@ -84,10 +85,25 @@ export default function ConsistentProfilePage() {
 
       setGeographicPreferences(profileData.geographic_preferences || []);
 
-      setSetAsideEligibilities(profileData.set_aside_eligibilities || []);
+      // Handle set-asides with "None" value
+      const setAsides = profileData.set_aside_eligibilities || [];
+      if (setAsides.length === 1 && setAsides[0] === 'None') {
+        setSetAsideEligibilities([]);
+        setHasSetAsides(false);
+      } else {
+        setSetAsideEligibilities(setAsides);
+        setHasSetAsides(true);
+      }
 
-      setCageCodeProvided(!!(profileData.cage_code && profileData.cage_code.trim()) || profileData.has_identifiers === true);
-      setUeiProvided(!!(profileData.uei && profileData.uei.trim()) || profileData.has_identifiers === true);
+      // Handle identifiers with "None" value
+      setCageCodeProvided(
+        !!(profileData.cage_code && profileData.cage_code !== 'None' && profileData.cage_code.trim()) ||
+        profileData.has_identifiers === true
+      );
+      setUeiProvided(
+        !!(profileData.uei && profileData.uei !== 'None' && profileData.uei.trim()) ||
+        profileData.has_identifiers === true
+      );
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     } finally {
@@ -104,8 +120,8 @@ export default function ConsistentProfilePage() {
     return buildProfilePayload({
       company_name: profile?.company_name,
       email: profile?.email,
-      cage_code: cageCodeProvided ? profile?.cage_code : null,
-      uei: ueiProvided ? profile?.uei : null,
+      cage_code: cageCodeProvided ? profile?.cage_code : 'None',
+      uei: ueiProvided ? profile?.uei : 'None',
       has_identifiers: cageCodeProvided || ueiProvided ? true : false,
       capabilities: hasCapabilities ? capabilities : [],
       has_capabilities: hasCapabilities,
@@ -113,7 +129,7 @@ export default function ConsistentProfilePage() {
       has_agencies: hasAgencies,
       primary_naics: naicsPrimary,
       geographic_preferences: geographicPreferences,
-      set_aside_eligibilities: setAsideEligibilities,
+      set_aside_eligibilities: hasSetAsides ? setAsideEligibilities : ['None'],
     });
   };
 
@@ -343,7 +359,7 @@ export default function ConsistentProfilePage() {
                           <Input
                             placeholder="5-character code"
                             maxLength={5}
-                            value={profile.cage_code || ''}
+                            value={profile.cage_code && profile.cage_code !== 'None' ? profile.cage_code : ''}
                             onChange={(e) => setProfile({ ...profile, cage_code: e.target.value })}
                           />
                         ) : (
@@ -352,7 +368,12 @@ export default function ConsistentProfilePage() {
                           </div>
                         )}
                         <button
-                          onClick={() => setCageCodeProvided(!cageCodeProvided)}
+                          onClick={() => {
+                            setCageCodeProvided(!cageCodeProvided);
+                            if (cageCodeProvided) {
+                              setProfile({ ...profile, cage_code: 'None' });
+                            }
+                          }}
                           className="px-3 py-2 bg-gray-500/20 text-gray-400 rounded-lg text-sm hover:bg-gray-500/30 transition-colors"
                         >
                           {cageCodeProvided ? 'Mark as None' : 'I have a CAGE Code'}
@@ -369,7 +390,7 @@ export default function ConsistentProfilePage() {
                           <Input
                             placeholder="12-character UEI"
                             maxLength={12}
-                            value={profile.uei || ''}
+                            value={profile.uei && profile.uei !== 'None' ? profile.uei : ''}
                             onChange={(e) => setProfile({ ...profile, uei: e.target.value })}
                           />
                         ) : (
@@ -378,7 +399,12 @@ export default function ConsistentProfilePage() {
                           </div>
                         )}
                         <button
-                          onClick={() => setUeiProvided(!ueiProvided)}
+                          onClick={() => {
+                            setUeiProvided(!ueiProvided);
+                            if (ueiProvided) {
+                              setProfile({ ...profile, uei: 'None' });
+                            }
+                          }}
                           className="px-3 py-2 bg-gray-500/20 text-gray-400 rounded-lg text-sm hover:bg-gray-500/30 transition-colors"
                         >
                           {ueiProvided ? 'Mark as None' : 'I have a UEI'}
@@ -812,62 +838,83 @@ export default function ConsistentProfilePage() {
                     Set-Aside Eligibilities
                   </label>
 
-                  <div className="space-y-3">
-                    {setAsideOptions.map((option) => {
-                      const isSelected = setAsideEligibilities.includes(option.value);
-                      return (
-                        <button
-                          key={option.value}
-                          onClick={() => toggleSetAside(option.value)}
-                          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                            isSelected
-                              ? 'bg-green-500/20 border-green-500/50 shadow-lg'
-                              : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center mb-1">
-                                <ShieldCheckIcon className={`h-5 w-5 mr-2 ${isSelected ? 'text-green-400' : 'text-gray-400'}`} />
-                                <span className={`font-semibold ${isSelected ? 'text-green-300' : 'text-white'}`}>
-                                  {option.label}
-                                </span>
+                  {hasSetAsides ? (
+                    <>
+                      <div className="space-y-3">
+                        {setAsideOptions.map((option) => {
+                          const isSelected = setAsideEligibilities.includes(option.value);
+                          return (
+                            <button
+                              key={option.value}
+                              onClick={() => toggleSetAside(option.value)}
+                              className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                                isSelected
+                                  ? 'bg-green-500/20 border-green-500/50 shadow-lg'
+                                  : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center mb-1">
+                                    <ShieldCheckIcon className={`h-5 w-5 mr-2 ${isSelected ? 'text-green-400' : 'text-gray-400'}`} />
+                                    <span className={`font-semibold ${isSelected ? 'text-green-300' : 'text-white'}`}>
+                                      {option.label}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-gray-400 ml-7">{option.description}</p>
+                                </div>
+                                <div className={`flex-shrink-0 ml-4 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                  isSelected
+                                    ? 'bg-green-500 border-green-500'
+                                    : 'border-gray-400'
+                                }`}>
+                                  {isSelected && (
+                                    <CheckCircleIcon className="h-4 w-4 text-white" />
+                                  )}
+                                </div>
                               </div>
-                              <p className="text-sm text-gray-400 ml-7">{option.description}</p>
-                            </div>
-                            <div className={`flex-shrink-0 ml-4 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                              isSelected
-                                ? 'bg-green-500 border-green-500'
-                                : 'border-gray-400'
-                            }`}>
-                              {isSelected && (
-                                <CheckCircleIcon className="h-4 w-4 text-white" />
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            </button>
+                          );
+                        })}
+                      </div>
 
-                  {setAsideEligibilities.length === 0 && (
-                    <div className="mt-4 text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
+                      {setAsideEligibilities.length === 0 && (
+                        <div className="mt-4 text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
+                          <ShieldCheckIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
+                          <p className="text-gray-400 text-sm">No certifications selected</p>
+                          <p className="text-gray-500 text-xs mt-1">Select your set-aside eligibilities above</p>
+                        </div>
+                      )}
+
+                      {setAsideEligibilities.length > 0 && (
+                        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                          <p className="text-sm text-green-300 font-medium mb-2">
+                            ✓ You have {setAsideEligibilities.length} certification(s) selected
+                          </p>
+                          <p className="text-xs text-green-200">
+                            These will be used to match you with set-aside opportunities
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-8 bg-white/5 rounded-lg border border-white/10 border-dashed">
                       <ShieldCheckIcon className="h-12 w-12 text-gray-500 mx-auto mb-2" />
-                      <p className="text-gray-400 text-sm">No certifications selected</p>
-                      <p className="text-gray-500 text-xs mt-1">Select your set-aside eligibilities above</p>
+                      <p className="text-gray-400 text-sm">No set-aside certifications provided</p>
                     </div>
                   )}
 
-                  {setAsideEligibilities.length > 0 && (
-                    <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                      <p className="text-sm text-green-300 font-medium mb-2">
-                        ✓ You have {setAsideEligibilities.length} certification(s) selected
-                      </p>
-                      <p className="text-xs text-green-200">
-                        These will be used to match you with set-aside opportunities
-                      </p>
-                    </div>
-                  )}
+                  <button
+                    onClick={() => {
+                      setHasSetAsides(!hasSetAsides);
+                      if (hasSetAsides) {
+                        setSetAsideEligibilities([]);
+                      }
+                    }}
+                    className="mt-4 px-3 py-2 bg-gray-500/20 text-gray-400 rounded-lg text-sm hover:bg-gray-500/30 transition-colors"
+                  >
+                    {hasSetAsides ? 'Mark as None' : 'Add Certifications'}
+                  </button>
                 </div>
               )}
             </CardBody>

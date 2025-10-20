@@ -38,9 +38,16 @@ export type SectionCompleteness = {
 const arrLen = (a?: unknown[]): number => (Array.isArray(a) ? a.length : 0);
 
 /**
- * Helper to safely check if string is non-empty
+ * Helper to safely check if string is non-empty and not "None"
  */
-const hasString = (s?: string | null): boolean => !!(s && s.trim());
+const hasString = (s?: string | null): boolean => !!(s && s.trim() && s !== 'None');
+
+/**
+ * Helper to check if array has "None" value
+ */
+const hasNoneValue = (a?: string[]): boolean => {
+  return Array.isArray(a) && a.length === 1 && a[0] === 'None';
+};
 
 /**
  * Compute which sections are complete
@@ -49,24 +56,40 @@ const hasString = (s?: string | null): boolean => !!(s && s.trim());
 export function computeSectionCompleteness(p: ProfileForCompleteness): SectionCompleteness {
   const basic = !!(p.company_name && p.email);
 
+  // Identifiers section is complete if:
+  // - They have a valid CAGE code (not null, not empty, not "None"), OR
+  // - They have a valid UEI (not null, not empty, not "None"), OR
+  // - They explicitly marked both as None
   const identifiers =
     hasString(p.cage_code) ||
     hasString(p.uei) ||
+    (p.cage_code === 'None' && p.uei === 'None') ||
     (p.has_identifiers === false);
 
   const naics = arrLen(p.primary_naics) > 0;
 
+  // Capabilities section is complete if:
+  // - They explicitly said they have none (has_capabilities === false), OR
+  // - They have at least 3 capabilities
   const capabilities =
     (p.has_capabilities === false) ||
     arrLen(p.capabilities) >= 3;
 
+  // Experience section is complete if:
+  // - They explicitly said they have no agencies (has_agencies === false), OR
+  // - They have at least 1 agency
   const experience =
     (p.has_agencies === false) ||
     arrLen(p.past_performance_agencies) > 0;
 
   const preferences = arrLen(p.geographic_preferences) > 0;
 
-  const certifications = arrLen(p.set_aside_eligibilities) > 0;
+  // Certifications section is complete if:
+  // - They have at least one certification selected, OR
+  // - They explicitly marked it as "None"
+  const certifications =
+    arrLen(p.set_aside_eligibilities) > 0 ||
+    hasNoneValue(p.set_aside_eligibilities);
 
   return {
     basic,
