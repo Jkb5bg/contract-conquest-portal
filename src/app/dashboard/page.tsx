@@ -144,11 +144,13 @@ export default function EnhancedDashboard() {
               title="No opportunities yet"
               description="New opportunities will appear here as they match your profile"
               action={
-                <Link href="/dashboard/profile">
-                  <Button variant="primary">
-                    Complete Your Profile
-                  </Button>
-                </Link>
+                profileCompleteness < 100 ? (
+                  <Link href="/dashboard/profile">
+                    <Button variant="primary">
+                      Complete Your Profile
+                    </Button>
+                  </Link>
+                ) : undefined
               }
             />
           )}

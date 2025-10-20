@@ -7,10 +7,9 @@ Profile:
 
 #TODO Connect to backend for NAICS code limitation
 #TODO Connect to backend Subscriber tiers
-Add in a "NONE" button
+Add in a "NONE" button - fix NONE button
 
 #TODO Get with Justin to add in an audit results checklist
-#TODO Do some backend work on the contract match quality
 
 Analytics:
 
