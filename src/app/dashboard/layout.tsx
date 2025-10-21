@@ -19,7 +19,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/dashboard/opportunities': 'Opportunities',
   '/dashboard/profile': 'Profile',
-  '/dashboard/analytics': 'Analytics',
+  // '/dashboard/analytics': 'Analytics',
   '/dashboard/admin': 'Admin Panel',
 };
 
@@ -47,8 +47,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Opportunities', href: '/dashboard/opportunities', icon: FolderIcon },
-    { name: 'Profile', href: '/dashboard/profile', icon: UserCircleIcon },
-    { name: 'Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
+    { name: 'Profile', href: '/dashboard/profile', icon: UserCircleIcon }
+    // { name: 'Analytics', href: '/dashboard/analytics', icon: ChartBarIcon },
   ];
 
   if (isAdmin) {
