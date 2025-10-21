@@ -78,8 +78,14 @@ export default function ConsistentProfilePage() {
       setCapabilities(profileData.capabilities || []);
       setHasCapabilities(profileData.has_capabilities !== false);
 
-      setAgencies(profileData.past_performance_agencies || []);
-      setHasAgencies(profileData.has_agencies !== false);
+      const agenciesData = profileData.past_performance_agencies || [];
+      if (agenciesData.length === 1 && agenciesData[0] === 'None') {
+        setAgencies([]);
+        setHasAgencies(false);
+      } else {
+        setAgencies(agenciesData);
+        setHasAgencies(profileData.has_agencies !== false);
+      }
 
       setNaicsPrimary(profileData.primary_naics || []);
 
@@ -125,7 +131,7 @@ export default function ConsistentProfilePage() {
       has_identifiers: cageCodeProvided || ueiProvided ? true : false,
       capabilities: hasCapabilities ? capabilities : [],
       has_capabilities: hasCapabilities,
-      past_performance_agencies: hasAgencies ? agencies : [],
+      past_performance_agencies: hasAgencies ? agencies : ['None'],
       has_agencies: hasAgencies,
       primary_naics: naicsPrimary,
       geographic_preferences: geographicPreferences,
@@ -719,7 +725,12 @@ export default function ConsistentProfilePage() {
                   )}
 
                   <button
-                    onClick={() => setHasAgencies(!hasAgencies)}
+                    onClick={() => {
+                      setHasAgencies(!hasAgencies);
+                      if (hasAgencies) {
+                        setAgencies([]); // clears the UI immediately when marking "None"
+                      }
+                    }}
                     className="mt-4 px-3 py-2 bg-gray-500/20 text-gray-400 rounded-lg text-sm hover:bg-gray-500/30 transition-colors"
                   >
                     {hasAgencies ? 'Mark as None' : 'Add Agencies'}
