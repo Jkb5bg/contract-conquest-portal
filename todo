@@ -4,14 +4,16 @@ Profile:
 
 #TODO Connect to backend for NAICS code limitation
 #TODO Connect to backend Subscriber tiers
-Add in a "NONE" button - fix NONE button
 
 #TODO Get with Justin to add in an audit results checklist
 
-Analytics:
+Marketplace:
 
 Transform analytics to an interested area
 Allow for posting of profiles for proposal writers
 Add an auto-emailing system so people can gauge interest and interact with the writers
 
 #TODO Forgot password section
+#TODO Password longevity
+#TODO Enhance security
+#TODO Save/Pursue/Pass/View Details - Opportunity screen
