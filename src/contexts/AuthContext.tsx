@@ -186,8 +186,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Token is valid, fetch user data from backend
           try {
             console.log('Token found, fetching user data from backend...');
-            const response = await apiClient.get<User>('/auth/me');
-            setUser(response.data);
+            const response = await apiClient.get('/profile/me');
+            const profile = response.data;
+
+            // Extract user info from profile
+            const userInfo: User = {
+              email: profile.email,
+              client_id: profile.client_id,
+              user_id: 0, // Backend should provide this if needed
+            };
+
+            setUser(userInfo);
 
             // Schedule token refresh if needed
             if (expiresAt) {
