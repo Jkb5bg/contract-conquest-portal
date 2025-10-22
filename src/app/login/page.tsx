@@ -104,7 +104,7 @@ export default function LoginPage() {
             <Link href="/forgot-password" className="text-gray-400 hover:text-purple-400 transition-colors">
               Forgot password?
             </Link>
-            <Link href="/" className="text-gray-400 hover:text-purple-400 transition-colors">
+            <Link href="/dashboard" className="text-gray-400 hover:text-purple-400 transition-colors">
               Back to website
             </Link>
           </div>

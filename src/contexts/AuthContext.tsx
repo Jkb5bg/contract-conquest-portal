@@ -170,36 +170,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       try {
         const token = localStorage.getItem('access_token');
-        const storedUser = localStorage.getItem('user');
 
-        if (token && storedUser) {
+        if (token) {
+          // Check token expiration first
+          const expiresAt = getTokenExpiration(token);
+          const now = Math.floor(Date.now() / 1000);
+
+          if (expiresAt && now >= expiresAt) {
+            console.log('Token expired, attempting refresh...');
+            await attemptTokenRefresh();
+            // If refresh fails, attemptTokenRefresh will clear storage and redirect
+            return;
+          }
+
+          // Token is valid, fetch user data from backend
           try {
-            setUser(JSON.parse(storedUser));
+            console.log('Token found, fetching user data from backend...');
+            const response = await apiClient.get<User>('/auth/me');
+            setUser(response.data);
 
-            // Check token expiration
-            const expiresAt = getTokenExpiration(token);
+            // Schedule token refresh if needed
             if (expiresAt) {
-              const now = Math.floor(Date.now() / 1000);
+              const daysUntilExpiry = (expiresAt - now) / (24 * 60 * 60);
+              console.log(`Token valid for ${daysUntilExpiry.toFixed(1)} more days`);
 
-              // If token is expired, refresh it
-              if (now >= expiresAt) {
-                console.log('Token expired, attempting refresh...');
-                await attemptTokenRefresh();
-              }
-              // If token expires in less than 1 day, schedule refresh
-              else if (expiresAt - now < 24 * 60 * 60) {
-                console.log('Token expires in less than 24 hours, scheduling refresh');
+              // Only schedule refresh for tokens expiring in < 7 days
+              if (daysUntilExpiry < 7) {
                 scheduleTokenRefresh(expiresAt);
               }
-              // Otherwise just log that we have a valid long-lived token
-              else {
-                const daysUntilExpiry = (expiresAt - now) / (24 * 60 * 60);
-                console.log(`Token valid for ${daysUntilExpiry.toFixed(1)} more days`);
-              }
             }
-          } catch (parseError) {
-            console.error('Failed to parse stored user:', parseError);
+          } catch (error) {
+            console.error('Failed to fetch user data:', error);
+            // If we can't fetch user data, token might be invalid
+            // Clear storage and force re-login
             localStorage.clear();
+            setUser(null);
           }
         }
       } finally {
@@ -248,7 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user_id: 0,
       };
 
-      localStorage.setItem('user', JSON.stringify(userInfo));
+      // Set user state (no need to store in localStorage anymore)
       setUser(userInfo);
       setIsPasswordTemporary(data.is_password_temporary);
 
@@ -270,7 +275,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cancelTokenRefresh();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
     setUser(null);
     setIsPasswordTemporary(false);
     router.push('/login');

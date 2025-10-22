@@ -12,7 +12,7 @@ import {
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
 
-export default function AnalyticsPage() {
+export default function ProposalsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Stats Overview */}
