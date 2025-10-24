@@ -10,14 +10,16 @@ Profile:
 #TODO Fix emailing system so there's not a ton of spam
 #TODO Create a system for one click email from match to proposal
 #TODO Enhance security
-#TODO Save/Pursue/Pass/View Details - Opportunity screen -- Tentative Finished
 #TODO Create user accounts for proposal writers
 #TODO Click from High Score opportunities dashboard / set max view
-#TODO Set max / paginated view in opportunities -- TENTATIVE FINISHED
-#TODO Setup match deleting -- TENTATIVE FINISHED
+
 
 
 #TODONE Fix Login -- Tentative complete
+#TODONE Save/Pursue/Pass/View Details - Opportunity screen -- Tentative Finished
+#TODONE Set max / paginated view in opportunities -- TENTATIVE FINISHED
+#TODONE Setup match deleting -- TENTATIVE FINISHED
+
 
 DB Setup
 

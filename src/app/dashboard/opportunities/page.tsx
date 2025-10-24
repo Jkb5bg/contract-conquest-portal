@@ -67,7 +67,7 @@ export default function ConsistentOpportunitiesPage() {
         params: {
           limit: pageSize,
           offset: offset,
-          score_min: 0.5,
+          score_min: 0,
         },
       });
 
