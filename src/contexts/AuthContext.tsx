@@ -20,15 +20,14 @@ const MAX_TIMEOUT_MS = 2147483647;
 
 /**
  * Decode a JWT token to extract claims
- * WARNING: This decodes without verification. Verification happens on the backend.
+ * WARNING: This will decode without verification. Verification happens on the backend.
  */
 function decodeJWT(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
 
-    const decoded = JSON.parse(atob(parts[1]));
-    return decoded;
+    return JSON.parse(atob(parts[1]));
   } catch (error) {
     console.error('Failed to decode JWT:', error);
     return null;
@@ -56,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Use refs to avoid infinite loops with timeouts
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isRefreshingRef = useRef(false);
+  const scheduleTokenRefreshRef = useRef<((expiresAt: number) => void) | null>(null);
 
   /**
    * Persist user to localStorage
@@ -78,6 +78,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to load user from storage:', error);
       return null;
+    }
+  }, []);
+
+  /**
+   * Cancel any pending token refresh
+   */
+  const cancelTokenRefresh = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = null;
+      console.log('Cancelled pending token refresh');
     }
   }, []);
 
@@ -112,10 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('access_token', access_token);
       console.log('Token refreshed successfully');
 
-      // Schedule next refresh
+      // Schedule next refresh using ref to avoid circular dependency
       const expiresAt = getTokenExpiration(access_token);
-      if (expiresAt) {
-        scheduleTokenRefresh(expiresAt);
+      if (expiresAt && scheduleTokenRefreshRef.current) {
+        scheduleTokenRefreshRef.current(expiresAt);
       }
     } catch (error) {
       console.error('Token refresh failed:', error);
@@ -128,17 +139,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isRefreshingRef.current = false;
     }
   }, [router]);
-
-  /**
-   * Cancel any pending token refresh
-   */
-  const cancelTokenRefresh = useCallback(() => {
-    if (refreshTimeoutRef.current) {
-      clearTimeout(refreshTimeoutRef.current);
-      refreshTimeoutRef.current = null;
-      console.log('Cancelled pending token refresh');
-    }
-  }, []);
 
   /**
    * Schedule a token refresh before it expires
@@ -154,28 +154,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log(`Token expires at: ${new Date(expiresAt * 1000).toISOString()}`);
     console.log(`Time until expiration: ${(timeUntilExpiration / 60 / 60 / 24).toFixed(1)} days`);
 
-    // If token is already expired or expiring in less than 2 minutes, refresh now
     if (timeUntilExpiration <= 120) {
       console.log('Token expiring soon, refreshing now');
       attemptTokenRefresh();
       return;
     }
 
-    // For long-lived tokens (> 7 days), don't schedule automatic refresh
-    // User will need to refresh manually or it will refresh on next app load
     const sevenDaysInSeconds = 7 * 24 * 60 * 60;
     if (timeUntilExpiration > sevenDaysInSeconds) {
       console.log('Token is long-lived (> 7 days), no automatic refresh scheduled');
-      console.log('Token will be checked on next app load or page refresh');
       return;
     }
 
-    // Schedule refresh for 10 minutes before expiration (only for tokens < 7 days)
     const tenMinutesInSeconds = 10 * 60;
     const refreshAt = expiresAt - tenMinutesInSeconds;
     const millisecondsUntilRefresh = Math.max(0, (refreshAt - now) * 1000);
 
-    // Double-check we're not exceeding setTimeout max
     if (millisecondsUntilRefresh > MAX_TIMEOUT_MS) {
       console.log('Refresh time exceeds setTimeout max, will check on next load');
       return;
@@ -188,6 +182,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await attemptTokenRefresh();
     }, millisecondsUntilRefresh);
   }, [attemptTokenRefresh, cancelTokenRefresh]);
+
+  // Update the ref whenever scheduleTokenRefresh changes
+  useEffect(() => {
+    scheduleTokenRefreshRef.current = scheduleTokenRefresh;
+  }, [scheduleTokenRefresh]);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -279,6 +278,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
 
+      document.cookie = `access_token=${data.access_token}; path=/; max-age=${7 * 24 * 60 * 60}`;
+
       // Get token expiration and schedule refresh if needed
       const expiresAt = getTokenExpiration(data.access_token);
       if (expiresAt) {
@@ -291,7 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Create user object
+      // Create a user object
       const userInfo: User = {
         email,
         client_id: data.client_id,
@@ -322,6 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    document.cookie = 'access_token=; path=/; max-age=0';
     setUser(null);
     setIsPasswordTemporary(false);
     router.push('/login');

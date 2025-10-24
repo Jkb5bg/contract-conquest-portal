@@ -4,7 +4,6 @@ import { apiClient } from '@/lib/api';
 import { Opportunity, OpportunityStatus } from '@/types/opportunity';
 import {
   Card,
-  CardHeader,
   CardBody,
   CardFooter,
   Button,
@@ -82,12 +81,6 @@ export default function ConsistentOpportunitiesPage() {
       if (sortBy === 'date') return new Date(b.matched_at).getTime() - new Date(a.matched_at).getTime();
       return 0;
     });
-
-  const getScoreColor = (score: number) => {
-    if (score >= 0.8) return 'success';
-    if (score >= 0.6) return 'warning';
-    return 'info';
-  };
 
   const getScoreBadge = (score: number) => {
     if (score >= 0.8) return 'Excellent';

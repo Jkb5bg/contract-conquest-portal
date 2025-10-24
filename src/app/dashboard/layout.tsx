@@ -1,5 +1,5 @@
 'use client';
-import {usePathname, useRouter} from 'next/navigation';
+import {usePathname} from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -10,12 +10,10 @@ import {
   ChartBarIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
-import {useEffect} from "react";
-import {LoadingSpinner} from "@/components/ui";
+import Image from "next/image";
 
 const ADMIN_EMAILS = ['jasonlettered@gmail.com', 'jbcloses@gmail.com'];
 
-// Page titles mapping
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/dashboard/opportunities': 'Opportunities',
@@ -26,24 +24,7 @@ const PAGE_TITLES: Record<string, string> = {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout, isLoading } = useAuth();
-
-  // Protect the dashboard - redirect to login if not authenticated
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
-  useEffect(() => {
-    // Only check if loading is complete
-    if (isLoading) {
-      return <LoadingSpinner />;
-    }
-
-    // Only redirect if user is actually not set (and loading is done)
-    if (!user) {
-      console.log('No user found, redirecting to login');
-      router.push('/login');
-    }
-  }, [isLoading, user, router]);
+  const { user, isLoading, logout } = useAuth();
 
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
 
@@ -58,7 +39,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     navigation.push({ name: 'Admin', href: '/dashboard/admin', icon: Cog6ToothIcon });
   }
 
-  // Get the current page title
   const currentPageTitle = PAGE_TITLES[pathname] || 'Portal';
 
   // Show loading state while checking authentication
@@ -73,9 +53,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // Don't render dashboard if not authenticated
+  // Don't render dashboard if not authenticated - let middleware/page handle redirect
   if (!user) {
-    console.log('❌ No user, returning null');
     return null;
   }
 
@@ -94,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Logo */}
           <div className="px-6 py-6 border-b border-white/10">
             <div className="flex items-center">
-            <img src="/logo.svg" alt="Contract Conquest" className="h-10 w-10 mr-3" />
+            <Image src="/logo.svg" alt="Contract Conquest" className="h-10 w-10 mr-3" />
               <div>
                 <h2 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                   Contract Conquest

@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 import { LockClosedIcon } from '@heroicons/react/24/outline';
 import { validatePassword, getPasswordRequirements, type PasswordRequirements } from '@/lib/passwordValidation';
 
@@ -20,7 +19,6 @@ export default function ChangePasswordPage() {
   });
 
   const { changePassword, isPasswordTemporary } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
     setPasswordRequirements(getPasswordRequirements(newPassword));
