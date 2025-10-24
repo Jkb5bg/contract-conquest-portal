@@ -24,7 +24,15 @@ import {
   RocketLaunchIcon,
   XMarkIcon,
   DocumentTextIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
+
+interface PaginationInfo {
+  total: number;
+  limit: number;
+  offset: number;
+}
 
 export default function ConsistentOpportunitiesPage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
@@ -35,15 +43,38 @@ export default function ConsistentOpportunitiesPage() {
   const [sortBy, setSortBy] = useState<string>('score');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    total: 0,
+    limit: 10,
+    offset: 0,
+  });
+
   useEffect(() => {
     fetchOpportunities();
-  }, []);
+  }, [currentPage, pageSize, sortBy]);
 
   const fetchOpportunities = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/opportunities/mine?limit=100&score_min=0.5');
+      const offset = (currentPage - 1) * pageSize;
+
+      const response = await apiClient.get('/opportunities/mine', {
+        params: {
+          limit: pageSize,
+          offset: offset,
+          score_min: 0.5,
+        },
+      });
+
       setOpportunities(response.data.opportunities || []);
+      setPagination({
+        total: response.data.total || 0,
+        limit: response.data.limit || pageSize,
+        offset: response.data.offset || offset,
+      });
     } catch (error) {
       console.error('Failed to fetch opportunities:', error);
     } finally {
@@ -58,10 +89,19 @@ export default function ConsistentOpportunitiesPage() {
 
   const handleStatusChange = async (id: string, status: OpportunityStatus) => {
     try {
-      setOpportunities(prev =>
-        prev.map(o => o.id === id ? { ...o, status } : o)
-      );
-      await apiClient.put(`/opportunities/${id}/status`, { status });
+      // If passing, delete the match instead
+      if (status === OpportunityStatus.PASSED) {
+        await apiClient.delete(`/opportunities/${id}`);
+        // Remove from UI immediately
+        setOpportunities(prev => prev.filter(o => o.id !== id));
+        // Update total count
+        setPagination(prev => ({ ...prev, total: prev.total - 1 }));
+      } else {
+        setOpportunities(prev =>
+          prev.map(o => o.id === id ? { ...o, status } : o)
+        );
+        await apiClient.put(`/opportunities/${id}/status`, { status });
+      }
     } catch (error) {
       console.error('Failed to update status:', error);
       fetchOpportunities(); // Revert on error
@@ -88,6 +128,27 @@ export default function ConsistentOpportunitiesPage() {
     return 'Fair';
   };
 
+  // Calculate pagination info
+  const totalPages = Math.ceil(pagination.total / pageSize);
+  const startItem = pagination.offset + 1;
+  const endItem = Math.min(pagination.offset + pageSize, pagination.total);
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const goToNextPage = () => {
+    goToPage(currentPage + 1);
+  };
+
+  const goToPreviousPage = () => {
+    goToPage(currentPage - 1);
+  };
+
   if (loading) {
     return <LoadingSpinner size="lg" />;
   }
@@ -101,12 +162,9 @@ export default function ConsistentOpportunitiesPage() {
             <div>
               <h1 className="text-2xl font-bold text-white mb-2">Your Opportunities</h1>
               <p className="text-gray-400">
-                Found {filteredOpportunities.length} opportunities matching your profile
+                Showing {startItem}-{endItem} of {pagination.total} total opportunities
               </p>
             </div>
-            {/*<Button variant="primary" onClick={fetchOpportunities}>*/}
-            {/*  Refresh*/}
-            {/*</Button>*/}
           </div>
         </CardBody>
       </Card>
@@ -156,6 +214,35 @@ export default function ConsistentOpportunitiesPage() {
                 { value: 'date', label: 'Sort by Date' },
               ]}
             />
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Page Size Selector */}
+      <Card>
+        <CardBody>
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-400">
+              Items per page:
+            </div>
+            <div className="flex gap-2">
+              {[5, 10, 20, 50].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => {
+                    setPageSize(size);
+                    setCurrentPage(1); // Reset to first page
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    pageSize === size
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                      : 'bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
           </div>
         </CardBody>
       </Card>
@@ -272,7 +359,6 @@ export default function ConsistentOpportunitiesPage() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {/* Claude's suggestion: external link button (HigherGov) */}
                     {opp.opportunity_url ? (
                       <a
                         href={toExternal(opp.opportunity_url)}
@@ -317,6 +403,136 @@ export default function ConsistentOpportunitiesPage() {
           </Card>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {pagination.total > 0 && (
+        <Card>
+          <CardBody>
+            <div className="flex items-center justify-between">
+              {/* Left: Info Text */}
+              <div className="text-sm text-gray-400">
+                Page <span className="text-white font-semibold">{currentPage}</span> of{' '}
+                <span className="text-white font-semibold">{totalPages}</span>
+                {' '}({pagination.total} total)
+              </div>
+
+              {/* Center: Page Numbers */}
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<ChevronLeftIcon className="h-4 w-4" />}
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+
+                {/* Page Number Buttons */}
+                <div className="flex gap-1">
+                  {(() => {
+                    const pages = [];
+                    const maxButtons = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+                    const endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+                    if (endPage - startPage + 1 < maxButtons) {
+                      startPage = Math.max(1, endPage - maxButtons + 1);
+                    }
+
+                    // Always show first page
+                    if (startPage > 1) {
+                      pages.push(
+                        <button
+                          key={1}
+                          onClick={() => goToPage(1)}
+                          className="px-2 py-1 rounded-lg text-sm text-gray-400 hover:bg-white/10 transition-colors"
+                        >
+                          1
+                        </button>
+                      );
+                      if (startPage > 2) {
+                        pages.push(
+                          <span key="ellipsis-start" className="text-gray-400">
+                            ...
+                          </span>
+                        );
+                      }
+                    }
+
+                    // Show page range
+                    for (let i = startPage; i <= endPage; i++) {
+                      pages.push(
+                        <button
+                          key={i}
+                          onClick={() => goToPage(i)}
+                          className={`px-2 py-1 rounded-lg text-sm font-medium transition-all ${
+                            currentPage === i
+                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                              : 'text-gray-400 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          {i}
+                        </button>
+                      );
+                    }
+
+                    // Always show last page
+                    if (endPage < totalPages) {
+                      if (endPage < totalPages - 1) {
+                        pages.push(
+                          <span key="ellipsis-end" className="text-gray-400">
+                            ...
+                          </span>
+                        );
+                      }
+                      pages.push(
+                        <button
+                          key={totalPages}
+                          onClick={() => goToPage(totalPages)}
+                          className="px-2 py-1 rounded-lg text-sm text-gray-400 hover:bg-white/10 transition-colors"
+                        >
+                          {totalPages}
+                        </button>
+                      );
+                    }
+
+                    return pages;
+                  })()}
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<ChevronRightIcon className="h-4 w-4" />}
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+
+              {/* Right: Go to Page Input */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-400">Go to:</label>
+                <input
+                  type="number"
+                  min="1"
+                  max={totalPages}
+                  defaultValue={currentPage}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      const page = parseInt((e.target as HTMLInputElement).value);
+                      goToPage(page);
+                    }
+                  }}
+                  className="w-12 px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                />
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }
