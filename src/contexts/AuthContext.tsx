@@ -274,46 +274,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = response.data;
 
-      // Store tokens
+      // Store tokens in localStorage
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
 
-      document.cookie = `access_token=${data.access_token}; path=/; max-age=${7 * 24 * 60 * 60}`;
+      // Set cookie for middleware - this is what middleware checks
+      const maxAge = 7 * 24 * 60 * 60; // 7 days
+      document.cookie = `access_token=${data.access_token}; path=/; max-age=${maxAge}; SameSite=Strict`;
 
-      // Get token expiration and schedule refresh if needed
-      const expiresAt = getTokenExpiration(data.access_token);
-      if (expiresAt) {
-        const now = Math.floor(Date.now() / 1000);
-        const daysUntilExpiry = (expiresAt - now) / (24 * 60 * 60);
-        console.log(`New token valid for ${daysUntilExpiry.toFixed(1)} days`);
-
-        if (daysUntilExpiry < 7) {
-          scheduleTokenRefresh(expiresAt);
-        }
-      }
-
-      // Create a user object
+      // Create user object
       const userInfo: User = {
         email,
         client_id: data.client_id,
         user_id: 0,
       };
 
-      // Set user state and persist to localStorage
+      // Set user state and persist
       setUser(userInfo);
       persistUser(userInfo);
       setIsPasswordTemporary(data.is_password_temporary);
 
-      // Navigate based on password status
-      if (data.is_password_temporary) {
-        router.push('/change-password');
-      } else {
-        router.push('/dashboard');
+      // Get token expiration
+      const expiresAt = getTokenExpiration(data.access_token);
+      if (expiresAt) {
+        const now = Math.floor(Date.now() / 1000);
+        const daysUntilExpiry = (expiresAt - now) / (24 * 60 * 60);
+        if (daysUntilExpiry < 7) {
+          scheduleTokenRefresh(expiresAt);
+        }
       }
+
+      // Wait a tiny bit for cookie to be set, then redirect
+      setTimeout(() => {
+        if (data.is_password_temporary) {
+          router.push('/change-password');
+        } else {
+          router.push('/dashboard');
+        }
+      }, 50);
     } catch (error: unknown) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      const message = (error as unknown).response?.data?.detail || 'Login failed';
+      let message = 'Login failed';
+
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof (error as { response?: { data?: { detail?: string } } }).response?.data?.detail === 'string'
+      ) {
+        message = (error as { response: { data: { detail: string } } }).response.data.detail;
+      }
+
       throw new Error(message);
     }
   }, [scheduleTokenRefresh, persistUser, router]);
