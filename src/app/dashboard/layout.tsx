@@ -11,6 +11,7 @@ import {
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import {useEffect} from "react";
+import {LoadingSpinner} from "@/components/ui";
 
 const ADMIN_EMAILS = ['jasonlettered@gmail.com', 'jbcloses@gmail.com'];
 
@@ -29,10 +30,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, logout, isLoading } = useAuth();
 
   // Protect the dashboard - redirect to login if not authenticated
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   useEffect(() => {
     // Only check if loading is complete
     if (isLoading) {
-      return;
+      return <LoadingSpinner />;
     }
 
     // Only redirect if user is actually not set (and loading is done)

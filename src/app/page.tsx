@@ -1,7 +1,7 @@
 'use client';
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
 
 export default function Home() {
   const router = useRouter();
@@ -9,7 +9,6 @@ export default function Home() {
 
   useEffect(() => {
     if (isLoading) return;
-
     if (user) {
       router.push('/dashboard');
     } else {
@@ -17,5 +16,6 @@ export default function Home() {
     }
   }, [user, isLoading, router]);
 
-  return null;
+  // Show nothing while loading
+  return <div />;
 }
