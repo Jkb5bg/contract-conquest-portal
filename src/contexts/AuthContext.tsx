@@ -58,6 +58,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isRefreshingRef = useRef(false);
 
   /**
+   * Persist user to localStorage
+   */
+  const persistUser = useCallback((userInfo: User | null) => {
+    if (userInfo) {
+      localStorage.setItem('user', JSON.stringify(userInfo));
+    } else {
+      localStorage.removeItem('user');
+    }
+  }, []);
+
+  /**
+   * Load user from localStorage
+   */
+  const loadUserFromStorage = useCallback((): User | null => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.error('Failed to load user from storage:', error);
+      return null;
+    }
+  }, []);
+
+  /**
    * Attempt to refresh the token
    * Uses ref to prevent concurrent refresh attempts
    */
@@ -179,11 +203,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (expiresAt && now >= expiresAt) {
             console.log('Token expired, attempting refresh...');
             await attemptTokenRefresh();
-            // If refresh fails, attemptTokenRefresh will clear storage and redirect
             return;
           }
 
-          // Token is valid, fetch user data from backend
+          // Token is valid, try to fetch fresh user data from backend
           try {
             console.log('Token found, fetching user data from backend...');
             const response = await apiClient.get('/profile/me');
@@ -193,27 +216,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const userInfo: User = {
               email: profile.email,
               client_id: profile.client_id,
-              user_id: 0, // Backend should provide this if needed
+              user_id: 0,
             };
 
             setUser(userInfo);
+            persistUser(userInfo);
+            console.log('✅ User loaded from backend:', userInfo.email);
 
             // Schedule token refresh if needed
             if (expiresAt) {
               const daysUntilExpiry = (expiresAt - now) / (24 * 60 * 60);
               console.log(`Token valid for ${daysUntilExpiry.toFixed(1)} more days`);
 
-              // Only schedule refresh for tokens expiring in < 7 days
               if (daysUntilExpiry < 7) {
                 scheduleTokenRefresh(expiresAt);
               }
             }
           } catch (error) {
-            console.error('Failed to fetch user data:', error);
-            // If we can't fetch user data, token might be invalid
-            // Clear storage and force re-login
-            localStorage.clear();
-            setUser(null);
+            console.error('Failed to fetch user data from backend:', error);
+            // Try to load from localStorage as fallback
+            const storedUser = loadUserFromStorage();
+            if (storedUser) {
+              setUser(storedUser);
+              console.log('✅ User loaded from localStorage (backend unavailable):', storedUser.email);
+            } else {
+              // No fallback, clear everything
+              console.log('No cached user, logging out');
+              localStorage.clear();
+              setUser(null);
+            }
+          }
+        } else {
+          // No token, check if we have cached user (shouldn't normally happen)
+          const storedUser = loadUserFromStorage();
+          if (storedUser) {
+            setUser(storedUser);
+            console.log('User loaded from localStorage (no token found)');
           }
         }
       } finally {
@@ -223,11 +261,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initAuth();
 
-    // Cleanup on unmount
     return () => {
       cancelTokenRefresh();
     };
-  }, [attemptTokenRefresh, scheduleTokenRefresh, cancelTokenRefresh]);
+  }, [attemptTokenRefresh, scheduleTokenRefresh, cancelTokenRefresh, persistUser, loadUserFromStorage]);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
@@ -249,7 +286,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const daysUntilExpiry = (expiresAt - now) / (24 * 60 * 60);
         console.log(`New token valid for ${daysUntilExpiry.toFixed(1)} days`);
 
-        // Only schedule refresh for tokens expiring in < 7 days
         if (daysUntilExpiry < 7) {
           scheduleTokenRefresh(expiresAt);
         }
@@ -262,8 +298,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user_id: 0,
       };
 
-      // Set user state (no need to store in localStorage anymore)
+      // Set user state and persist to localStorage
       setUser(userInfo);
+      persistUser(userInfo);
       setIsPasswordTemporary(data.is_password_temporary);
 
       // Navigate based on password status
@@ -278,12 +315,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const message = (error as unknown).response?.data?.detail || 'Login failed';
       throw new Error(message);
     }
-  }, [scheduleTokenRefresh, router]);
+  }, [scheduleTokenRefresh, persistUser, router]);
 
   const logout = useCallback(() => {
     cancelTokenRefresh();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
     setUser(null);
     setIsPasswordTemporary(false);
     router.push('/login');
