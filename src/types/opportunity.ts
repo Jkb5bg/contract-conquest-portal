@@ -1,3 +1,14 @@
+/**
+ * Location object structure for place of performance
+ * All fields are optional and may be null
+ */
+export interface Location {
+  country?: string | null;
+  state?: string | null;
+  city?: string | null;
+  zip?: string | null;
+}
+
 export interface Opportunity {
   id: string;
   opportunity_id: string;
@@ -12,6 +23,9 @@ export interface Opportunity {
   matched_at: string; // ISO datetime
   opportunity_url?: string;
   set_aside?: string;
+  // Location information
+  place_of_performance?: Location;
+  location?: string; // Backward compatibility - pre-formatted "City, State, Zip"
   // These fields come from the database schema but may be optional
   posted_date?: string;
   naics_code?: string;
@@ -19,6 +33,7 @@ export interface Opportunity {
   val_est_low?: string;
   val_est_high?: string;
 }
+
 export enum OpportunityStatus {
   NEW = 'new',
   SAVED = 'saved',

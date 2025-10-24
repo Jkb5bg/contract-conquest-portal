@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { Opportunity, OpportunityStatus } from '@/types/opportunity';
+import { getOpportunityLocation } from '@/lib/locationUtils';
 import {
   Card,
   CardBody,
@@ -27,6 +28,7 @@ import {
   DocumentTextIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
 
 interface PaginationInfo {
@@ -42,6 +44,7 @@ export default function ConsistentOpportunitiesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterScore, setFilterScore] = useState<number>(0.5);
+  const [filterLocation, setFilterLocation] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('score');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -119,13 +122,24 @@ export default function ConsistentOpportunitiesPage() {
     }
   };
 
+  // Extract unique states from opportunities for location filter
+  const uniqueStates = Array.from(
+    new Set(
+      opportunities
+        .map(o => o.place_of_performance?.state)
+        .filter((state): state is string => !!state)
+    )
+  ).sort();
+
   const filteredOpportunities = opportunities
     .filter(o => {
       const matchesSearch = o.opportunity_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            o.agency.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = filterStatus === 'all' || o.status === filterStatus;
       const matchesScore = o.match_score >= filterScore;
-      return matchesSearch && matchesStatus && matchesScore;
+      const matchesLocation = filterLocation === 'all' ||
+                             o.place_of_performance?.state === filterLocation;
+      return matchesSearch && matchesStatus && matchesScore && matchesLocation;
     })
     .sort((a, b) => {
       if (sortBy === 'score') return b.match_score - a.match_score;
@@ -183,7 +197,7 @@ export default function ConsistentOpportunitiesPage() {
       {/* Filters */}
       <Card>
         <CardBody>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Input
               placeholder="Search opportunities..."
               value={searchQuery}
@@ -199,6 +213,16 @@ export default function ConsistentOpportunitiesPage() {
                 { value: OpportunityStatus.NEW, label: 'New' },
                 { value: OpportunityStatus.SAVED, label: 'Saved' },
                 { value: OpportunityStatus.PURSUING, label: 'Pursuing' },
+              ]}
+            />
+
+            {/* NEW: Location Filter */}
+            <Select
+              value={filterLocation}
+              onChange={(e) => setFilterLocation(e.target.value)}
+              options={[
+                { value: 'all', label: 'All Locations' },
+                ...uniqueStates.map(state => ({ value: state, label: state }))
               ]}
             />
 
@@ -268,11 +292,17 @@ export default function ConsistentOpportunitiesPage() {
                     <h3 className="text-lg font-semibold text-white mb-2 hover:text-purple-400 cursor-pointer transition-colors">
                       {opp.opportunity_title}
                     </h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-400">
+                    <div className="flex items-center gap-4 text-sm text-gray-400 flex-wrap">
                       <span className="flex items-center">
                         <BuildingOfficeIcon className="h-4 w-4 mr-1" />
                         {opp.agency}
                       </span>
+                      {getOpportunityLocation(opp) !== 'Location not specified' && (
+                        <span className="flex items-center">
+                          <MapPinIcon className="h-4 w-4 mr-1" />
+                          {getOpportunityLocation(opp)}
+                        </span>
+                      )}
                       {opp.due_date && (
                         <span className="flex items-center">
                           <ClockIcon className="h-4 w-4 mr-1" />
@@ -407,6 +437,7 @@ export default function ConsistentOpportunitiesPage() {
                     setSearchQuery('');
                     setFilterStatus('all');
                     setFilterScore(0.5);
+                    setFilterLocation('all');
                   }}>
                     Clear Filters
                   </Button>

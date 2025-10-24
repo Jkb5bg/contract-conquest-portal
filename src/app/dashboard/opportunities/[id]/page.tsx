@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
+import { getOpportunityLocation } from '@/lib/locationUtils';
 import {
   Card,
   CardHeader,
@@ -16,12 +17,12 @@ import {
   ArrowTopRightOnSquareIcon,
   BuildingOfficeIcon,
   ClockIcon,
-  CurrencyDollarIcon,
   StarIcon,
   RocketLaunchIcon,
   XMarkIcon,
   CheckCircleIcon,
   DocumentTextIcon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
 
 interface Opportunity {
@@ -38,6 +39,13 @@ interface Opportunity {
   matched_at: string;
   opportunity_url?: string;
   set_aside?: string;
+  place_of_performance?: {
+    country?: string | null;
+    state?: string | null;
+    city?: string | null;
+    zip?: string | null;
+  };
+  location?: string;
 }
 
 export default function OpportunityDetailsPage() {
@@ -144,6 +152,8 @@ export default function OpportunityDetailsPage() {
     );
   }
 
+  const locationDisplay = getOpportunityLocation(opportunity);
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Back Button */}
@@ -178,6 +188,12 @@ export default function OpportunityDetailsPage() {
                   <BuildingOfficeIcon className="h-5 w-5 mr-2 text-purple-400" />
                   <span>{opportunity.agency}</span>
                 </div>
+                {locationDisplay !== 'Location not specified' && (
+                  <div className="flex items-center">
+                    <MapPinIcon className="h-5 w-5 mr-2 text-purple-400" />
+                    <span>{locationDisplay}</span>
+                  </div>
+                )}
                 {opportunity.due_date && (
                   <div className="flex items-center">
                     <ClockIcon className="h-5 w-5 mr-2 text-purple-400" />
@@ -290,6 +306,49 @@ export default function OpportunityDetailsPage() {
               </div>
             </CardBody>
           </Card>
+
+          {/* Location Details - NEW */}
+          {opportunity.place_of_performance && (
+            <Card>
+              <CardHeader>
+                <h2 className="text-xl font-semibold text-white flex items-center">
+                  <MapPinIcon className="h-5 w-5 mr-2" />
+                  Place of Performance
+                </h2>
+              </CardHeader>
+              <CardBody>
+                <div className="grid grid-cols-2 gap-4">
+                  {opportunity.place_of_performance.city && (
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">City</p>
+                      <p className="text-white font-semibold">{opportunity.place_of_performance.city}</p>
+                    </div>
+                  )}
+                  {opportunity.place_of_performance.state && (
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">State</p>
+                      <p className="text-white font-semibold">{opportunity.place_of_performance.state}</p>
+                    </div>
+                  )}
+                  {opportunity.place_of_performance.zip && (
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">Zip Code</p>
+                      <p className="text-white font-semibold">{opportunity.place_of_performance.zip}</p>
+                    </div>
+                  )}
+                  {opportunity.place_of_performance.country && (
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1">Country</p>
+                      <p className="text-white font-semibold">{opportunity.place_of_performance.country}</p>
+                    </div>
+                  )}
+                </div>
+                {!opportunity.place_of_performance.city && !opportunity.place_of_performance.state && !opportunity.place_of_performance.zip && (
+                  <p className="text-gray-400 italic">Location information not available</p>
+                )}
+              </CardBody>
+            </Card>
+          )}
 
           {/* Opportunity Identifiers */}
           <Card>
