@@ -10,11 +10,71 @@ Profile:
 #TODO Fix emailing system so there's not a ton of spam
 #TODO Create a system for one click email from match to proposal
 #TODO Enhance security
-#TODO Save/Pursue/Pass/View Details - Opportunity screen
+#TODO Save/Pursue/Pass/View Details - Opportunity screen -- Tentative Finished
 #TODO Create user accounts for proposal writers
 #TODO Click from High Score opportunities dashboard / set max view
-#TODO Set max / paginated view in opportunities
+#TODO Set max / paginated view in opportunities -- TENTATIVE FINISHED
 #TODO Setup match deleting -- TENTATIVE FINISHED
 
 
 #TODONE Fix Login -- Tentative complete
+
+DB Setup
+
+"interests"	1	"id"	"integer"	"NO"	"nextval('interests_id_seq'::regclass)"
+"interests"	2	"opportunity_id"	"character varying"	"YES"
+"interests"	3	"client_id"	"character varying"	"YES"
+"interests"	4	"interested"	"boolean"	"YES"
+"interests"	5	"notes"	"text"	"YES"
+"interests"	6	"timestamp"	"timestamp without time zone"	"YES"
+"interests"	7	"ip_address"	"character varying"	"YES"
+"interests"	8	"user_agent"	"text"	"YES"
+"leads"	1	"id"	"integer"	"NO"	"nextval('leads_id_seq'::regclass)"
+"leads"	2	"email"	"character varying"	"NO"
+"leads"	3	"business_name"	"character varying"	"NO"
+"leads"	4	"phone_number"	"character varying"	"NO"
+"leads"	5	"captured_at"	"timestamp without time zone"	"NO"	"CURRENT_TIMESTAMP"
+"leads"	6	"source"	"character varying"	"NO"	"'registration_page'::character varying"
+"leads"	7	"converted_to_customer"	"boolean"	"YES"	"false"
+"leads"	8	"notes"	"text"	"YES"
+"matches"	1	"id"	"integer"	"NO"	"nextval('matches_id_seq'::regclass)"
+"matches"	2	"opportunity_id"	"character varying"	"YES"
+"matches"	3	"client_id"	"character varying"	"YES"
+"matches"	4	"match_score"	"double precision"	"YES"
+"matches"	5	"reasoning"	"text"	"YES"
+"matches"	6	"opportunity_title"	"character varying"	"YES"
+"matches"	7	"agency"	"character varying"	"YES"
+"matches"	8	"due_date"	"date"	"YES"
+"matches"	9	"estimated_value"	"character varying"	"YES"
+"matches"	10	"matched_at"	"timestamp without time zone"	"YES"
+"matches"	11	"email_sent"	"boolean"	"YES"
+"matches"	12	"email_sent_at"	"timestamp without time zone"	"YES"
+"matches"	13	"opportunity_url"	"character varying"	"YES"
+"matches"	14	"location"	"character varying"	"YES"
+"opportunities"	1	"opp_key"	"character varying"	"NO"
+"opportunities"	2	"title"	"character varying"	"YES"
+"opportunities"	3	"description_text"	"text"	"YES"
+"opportunities"	4	"agency_name"	"character varying"	"YES"
+"opportunities"	5	"agency_data"	"text"	"YES"
+"opportunities"	6	"due_date"	"date"	"YES"
+"opportunities"	7	"posted_date"	"date"	"YES"
+"opportunities"	8	"naics_code"	"character varying"	"YES"
+"opportunities"	9	"naics_data"	"text"	"YES"
+"opportunities"	10	"psc_code"	"character varying"	"YES"
+"opportunities"	11	"psc_data"	"text"	"YES"
+"opportunities"	12	"val_est_low"	"character varying"	"YES"
+"opportunities"	13	"val_est_high"	"character varying"	"YES"
+"opportunities"	14	"set_aside"	"character varying"	"YES"
+"opportunities"	15	"created_at"	"timestamp without time zone"	"YES"
+"opportunities"	16	"opportunity_url"	"character varying"	"YES"
+"opportunities"	17	"location"	"character varying"	"YES"
+"users"	1	"id"	"integer"	"NO"	"nextval('users_id_seq'::regclass)"
+"users"	2	"client_id"	"character varying"	"NO"
+"users"	3	"email"	"character varying"	"NO"
+"users"	4	"password_hash"	"character varying"	"NO"
+"users"	5	"is_active"	"boolean"	"YES"
+"users"	6	"is_password_temporary"	"boolean"	"YES"
+"users"	7	"created_at"	"timestamp without time zone"	"YES"
+"users"	8	"last_login"	"timestamp without time zone"	"YES"
+"users"	9	"password_reset_token"	"character varying"	"YES"
+"users"	10	"password_reset_expires"	"timestamp without time zone"	"YES"

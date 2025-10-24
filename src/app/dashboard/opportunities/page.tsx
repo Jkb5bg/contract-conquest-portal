@@ -87,24 +87,33 @@ export default function ConsistentOpportunitiesPage() {
     return url.startsWith('http') ? url : `https://${url}`;
   };
 
-  const handleStatusChange = async (id: string, status: OpportunityStatus) => {
+  const handleStatusChange = async (id: string, newStatus: OpportunityStatus) => {
     try {
-      // If passing, delete the match instead
-      if (status === OpportunityStatus.PASSED) {
-        await apiClient.delete(`/opportunities/${id}`);
-        // Remove from UI immediately
-        setOpportunities(prev => prev.filter(o => o.id !== id));
-        // Update total count
-        setPagination(prev => ({ ...prev, total: prev.total - 1 }));
-      } else {
-        setOpportunities(prev =>
-          prev.map(o => o.id === id ? { ...o, status } : o)
-        );
-        await apiClient.put(`/opportunities/${id}/status`, { status });
+      // Store original state in case we need to revert
+      const originalOpportunities = [...opportunities];
+
+      // Optimistically update UI immediately
+      setOpportunities(prev =>
+        prev.map(o => o.id === id ? { ...o, status: newStatus } : o)
+      );
+
+      // For "passed" status, also remove from list
+      if (newStatus === OpportunityStatus.PASSED) {
+        // Give it a moment to show the UI update, then remove
+        setTimeout(() => {
+          setOpportunities(prev => prev.filter(o => o.id !== id));
+          setPagination(prev => ({ ...prev, total: Math.max(0, prev.total - 1) }));
+        }, 300);
       }
+
+      // Make API call
+      await apiClient.put(`/opportunities/${id}/status`, { status: newStatus });
+
+      console.log(`Opportunity ${id} status changed to ${newStatus}`);
     } catch (error) {
       console.error('Failed to update status:', error);
-      fetchOpportunities(); // Revert on error
+      // Revert on error
+      fetchOpportunities();
     }
   };
 
@@ -188,7 +197,6 @@ export default function ConsistentOpportunitiesPage() {
                 { value: OpportunityStatus.NEW, label: 'New' },
                 { value: OpportunityStatus.SAVED, label: 'Saved' },
                 { value: OpportunityStatus.PURSUING, label: 'Pursuing' },
-                { value: OpportunityStatus.PASSED, label: 'Passed' },
               ]}
             />
 
@@ -296,10 +304,9 @@ export default function ConsistentOpportunitiesPage() {
                   <Badge variant={
                     opp.status === OpportunityStatus.PURSUING ? 'success' :
                     opp.status === OpportunityStatus.SAVED ? 'warning' :
-                    opp.status === OpportunityStatus.PASSED ? 'danger' :
                     'info'
                   }>
-                    {opp.status}
+                    {opp.status.charAt(0).toUpperCase() + opp.status.slice(1)}
                   </Badge>
                 </div>
 
