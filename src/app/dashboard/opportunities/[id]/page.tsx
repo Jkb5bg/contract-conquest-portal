@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
-import { Opportunity, OpportunityStatus } from '@/types/opportunity';
 import {
   Card,
   CardHeader,
@@ -17,12 +16,29 @@ import {
   ArrowTopRightOnSquareIcon,
   BuildingOfficeIcon,
   ClockIcon,
+  CurrencyDollarIcon,
   StarIcon,
   RocketLaunchIcon,
   XMarkIcon,
   CheckCircleIcon,
   DocumentTextIcon,
 } from '@heroicons/react/24/outline';
+
+interface Opportunity {
+  id: string;
+  opportunity_id: string;
+  opportunity_title: string;
+  agency: string;
+  description?: string;
+  match_score: number;
+  reasoning: string;
+  status: string;
+  due_date?: string;
+  estimated_value?: string;
+  matched_at: string;
+  opportunity_url?: string;
+  set_aside?: string;
+}
 
 export default function OpportunityDetailsPage() {
   const params = useParams();
@@ -32,6 +48,7 @@ export default function OpportunityDetailsPage() {
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOpportunityDetails();
@@ -40,24 +57,43 @@ export default function OpportunityDetailsPage() {
   const fetchOpportunityDetails = async () => {
     try {
       setLoading(true);
-      // Fetch from opportunities/mine and find the matching one
-      const response = await apiClient.get('/opportunities/mine?limit=500&offset=0');
-      const opportunities = response.data.opportunities || [];
-      const found = opportunities.find((opp: Opportunity) => opp.id === opportunityId);
+      setError(null);
 
-      if (found) {
-        setOpportunity(found);
-      } else {
-        console.error('Opportunity not found');
+      // Try to fetch from opportunities/mine with smaller limit first
+      try {
+        const response = await apiClient.get('/opportunities/mine', {
+          params: {
+            limit: 100,
+            offset: 0,
+            score_min: 0
+          }
+        });
+
+        const opportunities = response.data.opportunities || [];
+        const found = opportunities.find((opp: Opportunity) => opp.id === opportunityId);
+
+        if (found) {
+          setOpportunity(found);
+          return;
+        }
+      } catch (err) {
+        console.error('Error fetching opportunities:', err);
+        setError('Failed to load opportunity');
+      }
+
+      // If not found, show error
+      if (!opportunity) {
+        setError('Opportunity not found');
       }
     } catch (error) {
       console.error('Failed to fetch opportunity details:', error);
+      setError('Failed to load opportunity details');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusChange = async (newStatus: OpportunityStatus) => {
+  const handleStatusChange = async (newStatus: string) => {
     if (!opportunity) return;
 
     try {
@@ -88,7 +124,7 @@ export default function OpportunityDetailsPage() {
     return <LoadingSpinner size="lg" />;
   }
 
-  if (!opportunity) {
+  if (error || !opportunity) {
     return (
       <div className="space-y-6">
         <Card>
@@ -96,7 +132,7 @@ export default function OpportunityDetailsPage() {
             <div className="text-center py-12">
               <DocumentTextIcon className="h-12 w-12 text-gray-500 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-white mb-2">Opportunity Not Found</h2>
-              <p className="text-gray-400 mb-6">The opportunity you&#39;re looking for could not be found.</p>
+              <p className="text-gray-400 mb-6">{error || 'The opportunity you\'re looking for could not be found.'}</p>
               <Button onClick={() => router.push('/dashboard/opportunities')}>
                 <ArrowLeftIcon className="h-4 w-4 mr-2" />
                 Back to Opportunities
@@ -288,9 +324,9 @@ export default function OpportunityDetailsPage() {
               <h2 className="text-lg font-semibold text-white">Your Interest</h2>
             </CardHeader>
             <CardBody className="space-y-3">
-              {opportunity.status !== OpportunityStatus.SAVED && (
+              {opportunity.status !== 'saved' && (
                 <Button
-                  onClick={() => handleStatusChange(OpportunityStatus.SAVED)}
+                  onClick={() => handleStatusChange('saved')}
                   isLoading={statusUpdating}
                 >
                   <StarIcon className="h-4 w-4 mr-2" />
@@ -298,9 +334,9 @@ export default function OpportunityDetailsPage() {
                 </Button>
               )}
 
-              {opportunity.status !== OpportunityStatus.PURSUING && (
+              {opportunity.status !== 'pursuing' && (
                 <Button
-                  onClick={() => handleStatusChange(OpportunityStatus.PURSUING)}
+                  onClick={() => handleStatusChange('pursuing')}
                   isLoading={statusUpdating}
                 >
                   <RocketLaunchIcon className="h-4 w-4 mr-2" />
@@ -308,9 +344,9 @@ export default function OpportunityDetailsPage() {
                 </Button>
               )}
 
-              {opportunity.status !== OpportunityStatus.PASSED && (
+              {opportunity.status !== 'passed' && (
                 <Button
-                  onClick={() => handleStatusChange(OpportunityStatus.PASSED)}
+                  onClick={() => handleStatusChange('passed')}
                   isLoading={statusUpdating}
                 >
                   <XMarkIcon className="h-4 w-4 mr-2" />
