@@ -72,6 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Don't render dashboard if not authenticated
   if (!user) {
+    console.log('❌ No user, returning null');
     return null;
   }
 

@@ -5,12 +5,14 @@ Profile:
 #TODO Connect to backend for NAICS code limitation
 #TODO Connect to backend Subscriber tiers
 #TODO Get with Justin to add in an audit results checklist
-
-Marketplace:
-
-Transform analytics to an interested area
-Allow for posting of profiles for proposal writers
-Add an auto-emailing system so people can gauge interest and interact with the writers
-
+#TODO Create marketplace
+#TODO Manage contacts via marketplace
+#TODO Fix emailing system so there's not a ton of spam
+#TODO Create a system for one click email from match to proposal
 #TODO Enhance security
 #TODO Save/Pursue/Pass/View Details - Opportunity screen
+#TODO Fix Login
+#TODO Create user accounts for proposal writers
+#TODO Click from High Score opportunities dashboard / set max view
+#TODO Set max / paginated view in opportunities
+#TODO Setup match deleting
