@@ -44,7 +44,7 @@ export default function OpportunityCard({ opportunity, onStatusChange, onViewDet
     }
   };
 
-  const getDaysUntilDue = (dueDate: string | null) => {
+  const getDaysUntilDue = (dueDate: string | undefined) => {
     if (!dueDate) return null;
     const due = new Date(dueDate);
     const today = new Date();

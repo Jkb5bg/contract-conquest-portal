@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { Opportunity, OpportunityStatus } from '@/types/opportunity';
 import {
@@ -35,6 +36,7 @@ interface PaginationInfo {
 }
 
 export default function ConsistentOpportunitiesPage() {
+  const router = useRouter();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -380,7 +382,11 @@ export default function ConsistentOpportunitiesPage() {
                       <span className="text-xs text-gray-500">Link unavailable</span>
                     )}
 
-                    <Button size="sm" variant="ghost">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => router.push(`/dashboard/opportunities/${opp.id}`)}
+                    >
                       View Details →
                     </Button>
                   </div>
