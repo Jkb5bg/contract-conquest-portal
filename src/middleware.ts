@@ -4,23 +4,34 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const token = request.cookies.get('access_token')?.value;
 
-  // If trying to access dashboard without token, redirect to login
-  if (pathname.startsWith('/dashboard') && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // Also check localStorage token as fallback (for immediate redirects after login)
+  const hasToken = !!token;
+
+  // Route: /login
+  if (pathname === '/login') {
+    // If user has token, redirect to dashboard
+    if (hasToken) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    // Otherwise, allow access to login page
+    return NextResponse.next();
   }
 
-  // If on login page with token, redirect to dashboard
-  if (pathname === '/login' && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // Route: /dashboard and protected routes
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/change-password')) {
+    // If no token, redirect to login
+    if (!hasToken) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+    // Allow access
+    return NextResponse.next();
   }
 
-  // If on root with token, redirect to dashboard
-  if (pathname === '/' && token) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  // If on root without token, redirect to login
-  if (pathname === '/' && !token) {
+  // Route: /
+  if (pathname === '/') {
+    if (hasToken) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -28,5 +39,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/login', '/dashboard/:path*'],
+  matcher: ['/', '/login', '/dashboard/:path*', '/change-password'],
 };

@@ -121,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { access_token } = response.data;
       localStorage.setItem('access_token', access_token);
+      document.cookie = `access_token=${access_token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
       console.log('Token refreshed successfully');
 
       // Schedule next refresh using ref to avoid circular dependency
@@ -278,9 +279,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
 
-      // Set cookie for middleware - this is what middleware checks
+      // Set cookie for middleware with SameSite=Lax for better SSR compatibility
       const maxAge = 7 * 24 * 60 * 60; // 7 days
-      document.cookie = `access_token=${data.access_token}; path=/; max-age=${maxAge}; SameSite=Strict`;
+      document.cookie = `access_token=${data.access_token}; path=/; max-age=${maxAge}; SameSite=Lax`;
 
       // Create user object
       const userInfo: User = {
@@ -294,7 +295,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       persistUser(userInfo);
       setIsPasswordTemporary(data.is_password_temporary);
 
-      // Get token expiration
+      // Get token expiration and schedule refresh if needed
       const expiresAt = getTokenExpiration(data.access_token);
       if (expiresAt) {
         const now = Math.floor(Date.now() / 1000);
@@ -304,14 +305,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Wait a tiny bit for cookie to be set, then redirect
+      // Redirect after a brief moment to ensure state updates
+      // The middleware will enforce route protection
       setTimeout(() => {
         if (data.is_password_temporary) {
           router.push('/change-password');
         } else {
           router.push('/dashboard');
         }
-      }, 50);
+      }, 100);
     } catch (error: unknown) {
       let message = 'Login failed';
 

@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -8,8 +9,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const { login } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,9 +20,11 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
+      // Don't do anything here - login() handles the redirect
+      // Just let isSubmitting stay true to show loading state
     } catch (err: unknown) {
       // @ts-expect-error Lint is tripping off this error again...
-      setError(err.message);
+      setError(err.message || 'Login failed');
       setIsSubmitting(false);
     }
   };
@@ -65,7 +69,8 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all backdrop-blur"
+                disabled={isSubmitting}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all backdrop-blur disabled:opacity-50"
                 placeholder="your@company.com"
               />
             </div>
@@ -79,7 +84,8 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all backdrop-blur"
+                disabled={isSubmitting}
+                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all backdrop-blur disabled:opacity-50"
                 placeholder="Enter your password"
               />
             </div>
@@ -104,7 +110,7 @@ export default function LoginPage() {
             <Link href="/forgot-password" className="text-gray-400 hover:text-purple-400 transition-colors">
               Forgot password?
             </Link>
-            <Link href="/dashboard" className="text-gray-400 hover:text-purple-400 transition-colors">
+            <Link href="/login" className="text-gray-400 hover:text-purple-400 transition-colors">
               Back to website
             </Link>
           </div>
