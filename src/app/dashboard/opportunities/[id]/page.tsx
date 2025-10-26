@@ -429,7 +429,7 @@ export default function OpportunityDetailsPage() {
                   className="w-full flex items-center justify-center px-4 py-3 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors font-medium"
                 >
                   <ArrowTopRightOnSquareIcon className="h-5 w-5 mr-2" />
-                  Open on SAM.gov
+                  Open on Entity Site
                 </a>
               </CardBody>
             </Card>

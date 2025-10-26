@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Opportunity, OpportunityStatus } from '@/types/opportunity';
 import { getOpportunityLocation } from '@/lib/locationUtils';
 import {
@@ -24,6 +25,7 @@ interface OpportunityCardProps {
 export default function OpportunityCard({ opportunity, onStatusChange, onViewDetails }: OpportunityCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const router = useRouter();
 
   const getScoreColor = (score: number) => {
     if (score >= 0.8) return 'from-green-400 to-emerald-500';
@@ -61,6 +63,10 @@ export default function OpportunityCard({ opportunity, onStatusChange, onViewDet
     setIsUpdating(false);
   };
 
+  const handleViewDetails = () => {
+    router.push(`/dashboard/opportunities/${opportunity.id}`);
+  };
+
   const daysUntilDue = getDaysUntilDue(opportunity.due_date);
   const isUrgent = daysUntilDue !== null && daysUntilDue <= 7;
   const locationDisplay = getOpportunityLocation(opportunity);
@@ -72,17 +78,16 @@ export default function OpportunityCard({ opportunity, onStatusChange, onViewDet
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
             <div className="flex items-start justify-between">
+              {/* CHANGE: Made title clickable */}
               <h3
+                onClick={handleViewDetails}
                 className="text-lg font-semibold text-white hover:text-purple-400 cursor-pointer transition-colors"
-                onClick={() => onViewDetails(opportunity)}
               >
                 {opportunity.opportunity_title}
               </h3>
-              <div className="flex items-center space-x-2 ml-4">
+              <div className="flex items-center gap-2">
                 {getStatusIcon(opportunity.status)}
-                <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getScoreColor(opportunity.match_score)} text-white text-xs font-bold`}>
-                  {(opportunity.match_score * 100).toFixed(0)}%
-                </div>
+                <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${getScoreColor(opportunity.match_score)}`} />
               </div>
             </div>
 
@@ -95,7 +100,7 @@ export default function OpportunityCard({ opportunity, onStatusChange, onViewDet
               <span className="text-xs">ID: {opportunity.opportunity_id}</span>
             </div>
 
-            {/* Location - NEW */}
+            {/* Location */}
             {locationDisplay !== 'Location not specified' && (
               <div className="flex items-center mt-2 text-sm text-gray-400">
                 <MapPinIcon className="h-4 w-4 mr-1" />
@@ -128,6 +133,13 @@ export default function OpportunityCard({ opportunity, onStatusChange, onViewDet
                   {opportunity.set_aside}
                 </span>
               )}
+            </div>
+          </div>
+
+          {/* Match Score Badge */}
+          <div className="ml-4">
+            <div className={`px-4 py-2 rounded-full bg-gradient-to-r ${getScoreColor(opportunity.match_score)} text-white font-bold text-sm`}>
+              {(opportunity.match_score * 100).toFixed(0)}%
             </div>
           </div>
         </div>
@@ -184,8 +196,9 @@ export default function OpportunityCard({ opportunity, onStatusChange, onViewDet
             )}
           </div>
 
+          {/* CHANGE: Added View Details button that navigates */}
           <button
-            onClick={() => onViewDetails(opportunity)}
+            onClick={handleViewDetails}
             className="px-3 py-1.5 text-purple-400 hover:text-purple-300 text-sm transition-colors"
           >
             View Details →

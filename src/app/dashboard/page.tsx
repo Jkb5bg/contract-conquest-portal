@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { Opportunity } from '@/types/opportunity';
 import {
@@ -26,6 +27,7 @@ export default function EnhancedDashboard() {
   const [recentOpportunities, setRecentOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [profileCompleteness, setProfileCompleteness] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
     fetchDashboardData();
@@ -71,6 +73,10 @@ export default function EnhancedDashboard() {
     return 'from-blue-400 to-indigo-500';
   };
 
+  const handleOpportunityClick = (opportunityId: string) => {
+    router.push(`/dashboard/opportunities/${opportunityId}`);
+  };
+
   if (loading) {
     return <LoadingSpinner size="lg" />;
   }
@@ -98,6 +104,7 @@ export default function EnhancedDashboard() {
               {recentOpportunities.map((opp) => (
                 <div
                   key={opp.id}
+                  onClick={() => handleOpportunityClick(opp.id)}
                   className="p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 hover:border-purple-500/30 transition-all cursor-pointer group"
                 >
                   <div className="flex justify-between items-start mb-3">
@@ -191,7 +198,7 @@ export default function EnhancedDashboard() {
           </Link>
         )}
 
-        <Link href="/dashboard/analytics">
+        <Link href="/dashboard/proposals">
           <Card hoverable className="cursor-pointer">
             <CardBody className="text-center">
               <div className="inline-flex p-4 bg-green-500/20 rounded-full mb-3">
