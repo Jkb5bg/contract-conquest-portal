@@ -7,20 +7,17 @@ Profile:
 #TODO 3 Get with Justin to add in an audit results checklist
 #TODO 4 Create marketplace
 #TODO 5 Manage contacts via marketplace
-#TODO 6 Fix emailing system so there's not a ton of spam
 #TODO 7 Create a system for one click email from match to proposal
 #TODO 8 Enhance security
 #TODO 9 Create user accounts for proposal writers
-#TODO 10 Click from High Score opportunities dashboard / set max view
-#TODO 11 Fix Showing x-y of y total opportunities on opportunities page
 #TODO 12 Fix low match quality that don't match NAICS and do
 #TODO 13 Locations display
 
 
 
-
-
-
+#TODONE 6 Fix emailing system so there's not a ton of spam -- Tentative complete
+#TODONE 10 Click from High Score opportunities dashboard / set max view -- Tentative complete
+#TODONE 11 Fix Showing x-y of y total opportunities on opportunities page -- Tentative complete
 #TODONE Fix Login -- Tentative complete
 #TODONE Save/Pursue/Pass/View Details - Opportunity screen -- Tentative Finished
 #TODONE Set max / paginated view in opportunities -- TENTATIVE FINISHED

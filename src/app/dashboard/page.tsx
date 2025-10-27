@@ -13,11 +13,12 @@ import {
   EmptyState,
 } from '@/components/ui';
 import {
+  PencilIcon,
   DocumentTextIcon,
   ClockIcon,
   ChartBarIcon,
   SparklesIcon,
-  ArrowRightIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { computeProfileCompleteness } from '@/lib/profileCompleteness';
@@ -202,10 +203,10 @@ export default function EnhancedDashboard() {
           <Card hoverable className="cursor-pointer">
             <CardBody className="text-center">
               <div className="inline-flex p-4 bg-green-500/20 rounded-full mb-3">
-                <ChartBarIcon className="h-8 w-8 text-green-400" />
+                <PencilIcon className="h-8 w-8 text-green-400" />
               </div>
-              <h3 className="text-white font-semibold mb-1">View Analytics</h3>
-              <p className="text-sm text-gray-400">Track your performance</p>
+              <h3 className="text-white font-semibold mb-1">View Writers</h3>
+              <p className="text-sm text-gray-400">Find a proposal writer</p>
             </CardBody>
           </Card>
         </Link>

@@ -110,7 +110,7 @@ export default function OpportunityDetailModal({
                 className="flex items-center text-purple-400 hover:text-purple-300 transition-colors"
               >
                 <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-2" />
-                View on SAM.gov
+                View on external
               </a>
             </div>
           </div>
