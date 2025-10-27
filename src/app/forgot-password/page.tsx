@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 
 // Optional: avoid static prerender to be extra safe
-export const dynamic = 'force-dynamic'; // or: export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 function ResetPasswordClient() {
   const router = useRouter();
@@ -45,34 +45,48 @@ function ResetPasswordClient() {
     });
   }, [newPassword]);
 
-  const validatePassword = (password: string /*: string */) /*: string | null */ => {
-    if (password.length < 8) return 'Password must be at least 8 characters long';
-    if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter';
-    if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter';
-    if (!/[0-9]/.test(password)) return 'Password must contain at least one number';
-    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password))
-      return 'Password must contain at least one special character';
-    return null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const passwordError = validatePassword(newPassword);
-    if (passwordError) return setError(passwordError);
+    // Validate all password requirements
+    if (!passwordStrength.hasMinLength) {
+      return setError('Password must be at least 8 characters long');
+    }
+    if (!passwordStrength.hasUpperCase) {
+      return setError('Password must contain at least one uppercase letter');
+    }
+    if (!passwordStrength.hasLowerCase) {
+      return setError('Password must contain at least one lowercase letter');
+    }
+    if (!passwordStrength.hasNumber) {
+      return setError('Password must contain at least one number');
+    }
+    if (!passwordStrength.hasSpecialChar) {
+      return setError('Password must contain at least one special character');
+    }
 
-    if (newPassword !== confirmPassword) return setError('Passwords do not match');
+    if (newPassword !== confirmPassword) {
+      return setError('Passwords do not match');
+    }
 
     setIsSubmitting(true);
+
     try {
-      await apiClient.post('/auth/reset-password', { token, new_password: newPassword });
-      setSuccess(true);
-      setTimeout(() => router.push('/login'), 3000);
+      const response = await apiClient.post('/auth/reset-password', {
+        token,
+        new_password: newPassword,
+      });
+
+      if (response.status === 200) {
+        setSuccess(true);
+        setTimeout(() => router.push('/login'), 3000);
+      }
+    } catch (err: unknown) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
-    } catch (err: never) {
-      setError(err?.response?.data?.detail || 'Failed to reset password. The link may have expired.');
+      const errorMessage = err?.response?.data?.detail || 'Failed to reset password. The link may have expired.';
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   };
