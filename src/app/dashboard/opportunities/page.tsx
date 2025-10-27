@@ -289,7 +289,10 @@ export default function ConsistentOpportunitiesPage() {
               <CardBody>
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-white mb-2 hover:text-purple-400 cursor-pointer transition-colors">
+                    <h3
+                      className="text-lg font-semibold text-white mb-2 hover:text-purple-400 cursor-pointer transition-colors"
+                      onClick={() => router.push(`/dashboard/opportunities/${opp.id}`)}
+                    >
                       {opp.opportunity_title}
                     </h3>
                     <div className="flex items-center gap-4 text-sm text-gray-400 flex-wrap">
