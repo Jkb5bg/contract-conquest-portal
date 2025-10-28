@@ -44,7 +44,7 @@ export function WriterAuthProvider({ children }: { children: ReactNode }) {
       if (token && savedUser) {
         try {
           // Verify token is not expired
-          const decoded: any = jwtDecode(token);
+          const decoded: { exp?: number } = jwtDecode(token);
           const now = Date.now() / 1000;
 
           if (decoded.exp && decoded.exp > now) {

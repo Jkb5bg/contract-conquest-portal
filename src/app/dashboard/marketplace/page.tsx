@@ -15,7 +15,6 @@ import {
   Alert,
 } from '@/components/ui';
 import { getMarketplaceWriters, getAvailableSpecializations } from '@/lib/marketplaceApi';
-import { getErrorMessage } from '@/lib/errorUtils';
 import { ProposalWriterPublicProfile, MarketplaceFilters } from '@/types/marketplace';
 import {
   MagnifyingGlassIcon,
@@ -51,6 +50,7 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const loadData = async () => {
@@ -83,7 +83,7 @@ export default function MarketplacePage() {
     );
   });
 
-  const handleFilterChange = (key: keyof MarketplaceFilters, value: any) => {
+  const handleFilterChange = (key: keyof MarketplaceFilters, value: string | number | boolean | null) => {
     setFilters((prev) => ({
       ...prev,
       [key]: value === '' || value === 'all' ? null : value,

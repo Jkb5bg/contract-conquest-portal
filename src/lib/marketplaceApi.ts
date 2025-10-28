@@ -63,7 +63,7 @@ export async function getAvailableSpecializations(): Promise<string[]> {
 /**
  * Search NAICS codes
  */
-export async function searchNaicsCodes(query: string): Promise<any[]> {
+export async function searchNaicsCodes(query: string): Promise<Array<{ code: string; description?: string }>> {
   const response = await apiClient.get('/marketplace/search/naics-codes', {
     params: { query },
   });

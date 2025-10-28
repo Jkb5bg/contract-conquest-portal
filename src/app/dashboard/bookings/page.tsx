@@ -10,10 +10,8 @@ import {
   Alert,
   Modal,
   Button,
-  Input,
 } from '@/components/ui';
 import { getMyBookings, submitBookingReview } from '@/lib/marketplaceApi';
-import { getErrorMessage } from '@/lib/errorUtils';
 import { Booking, BookingReview } from '@/types/marketplace';
 import { CalendarIcon, StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
@@ -83,7 +81,7 @@ export default function ClientBookingsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, string> = {
       requested: 'warning',
       accepted: 'info',
       in_progress: 'primary',

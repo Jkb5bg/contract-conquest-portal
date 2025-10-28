@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Card, CardBody, Input, Button, Alert } from '@/components/ui';
 import { useWriterAuth } from '@/contexts/WriterAuthContext';
 import { validatePassword } from '@/lib/passwordValidation';
-import { getErrorMessage } from '@/lib/errorUtils';
 import { LockClosedIcon } from '@heroicons/react/24/outline';
 
 export default function WriterChangePasswordPage() {

@@ -19,10 +19,9 @@ import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 interface OpportunityCardProps {
   opportunity: Opportunity;
   onStatusChange: (id: string, status: OpportunityStatus) => void;
-  onViewDetails: (opportunity: Opportunity) => void;
 }
 
-export default function OpportunityCard({ opportunity, onStatusChange, onViewDetails }: OpportunityCardProps) {
+export default function OpportunityCard({ opportunity, onStatusChange }: OpportunityCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const router = useRouter();
