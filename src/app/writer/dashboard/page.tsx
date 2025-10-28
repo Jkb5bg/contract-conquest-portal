@@ -37,7 +37,8 @@ export default function WriterDashboardPage() {
       ]);
 
       setProfile(profileData);
-      setBookings(bookingsData);
+      // Ensure bookingsData is an array
+      setBookings(Array.isArray(bookingsData) ? bookingsData : []);
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'Failed to load dashboard data'));
     } finally {
@@ -189,7 +190,7 @@ export default function WriterDashboardPage() {
               </div>
             </div>
 
-            {profile.specializations && profile.specializations.length > 0 && (
+            {profile.specializations && Array.isArray(profile.specializations) && profile.specializations.length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-700">
                 <p className="text-sm text-gray-400 mb-2">Specializations</p>
                 <div className="flex flex-wrap gap-2">
