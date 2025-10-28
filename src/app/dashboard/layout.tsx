@@ -2,13 +2,15 @@
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  HomeIcon, 
-  FolderIcon, 
-  UserCircleIcon, 
+import {
+  HomeIcon,
+  FolderIcon,
+  UserCircleIcon,
   ArrowRightOnRectangleIcon,
   ChartBarIcon,
   Cog6ToothIcon,
+  ShoppingBagIcon,
+  CalendarIcon,
 } from '@heroicons/react/24/outline';
 import Image from "next/image";
 
@@ -19,6 +21,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard/opportunities': 'Opportunities',
   '/dashboard/profile': 'Profile',
   '/dashboard/proposals': 'Proposals',
+  '/dashboard/marketplace': 'Writer Marketplace',
+  '/dashboard/bookings': 'My Bookings',
   '/dashboard/admin': 'Admin Panel',
 };
 
@@ -31,6 +35,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Opportunities', href: '/dashboard/opportunities', icon: FolderIcon },
+    { name: 'Marketplace', href: '/dashboard/marketplace', icon: ShoppingBagIcon },
+    { name: 'My Bookings', href: '/dashboard/bookings', icon: CalendarIcon },
     { name: 'Profile', href: '/dashboard/profile', icon: UserCircleIcon },
     { name: 'Proposals', href: '/dashboard/proposals', icon: ChartBarIcon },
   ];
