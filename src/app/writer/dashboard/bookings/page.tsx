@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardBody, Button, Badge, LoadingSpinner, Alert, Modal, Select, Input } from '@/components/ui';
+import { Card, CardBody, Button, Badge, LoadingSpinner, Alert, Modal, Select } from '@/components/ui';
 import { getWriterBookings, updateBookingStatus } from '@/lib/writerApi';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { Booking, BookingStatus, BookingStatusUpdate } from '@/types/marketplace';
 import { CalendarIcon, FunnelIcon } from '@heroicons/react/24/outline';
 
@@ -40,7 +41,7 @@ export default function WriterBookingsPage() {
       const data = await getWriterBookings(100);
       setBookings(data);
       setFilteredBookings(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to load bookings');
     } finally {
       setIsLoading(false);
@@ -74,7 +75,7 @@ export default function WriterBookingsPage() {
 
       setShowStatusModal(false);
       setSelectedBooking(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to update booking status');
     } finally {
       setIsUpdating(false);

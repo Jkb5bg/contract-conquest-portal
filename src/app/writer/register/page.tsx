@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardBody, Input, Button, Alert } from '@/components/ui';
 import { registerWriter } from '@/lib/marketplaceApi';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { ProposalWriterRegistration } from '@/types/marketplace';
 import { UserPlusIcon } from '@heroicons/react/24/outline';
 
@@ -31,14 +32,14 @@ export default function WriterRegisterPage() {
     setError(null);
 
     try {
-      const response = await registerWriter(formData);
+      await registerWriter(formData);
       setSuccess(true);
 
       // Show success message for a moment then redirect
       setTimeout(() => {
         router.push('/writer/login');
       }, 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
         err.response?.data?.detail ||
           'Failed to register. Please check your information and try again.'

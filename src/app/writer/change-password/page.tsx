@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardBody, Input, Button, Alert } from '@/components/ui';
 import { useWriterAuth } from '@/contexts/WriterAuthContext';
 import { validatePassword } from '@/lib/passwordValidation';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { LockClosedIcon } from '@heroicons/react/24/outline';
 
 export default function WriterChangePasswordPage() {
@@ -58,7 +59,7 @@ export default function WriterChangePasswordPage() {
 
       // Success - redirect to dashboard
       window.location.href = '/writer/dashboard';
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
         err.response?.data?.detail ||
           'Failed to change password. Please check your current password.'

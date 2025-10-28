@@ -95,7 +95,6 @@ export default function ConsistentOpportunitiesPage() {
   const handleStatusChange = async (id: string, newStatus: OpportunityStatus) => {
     try {
       // Store original state in case we need to revert
-      const originalOpportunities = [...opportunities];
 
       // Optimistically update UI immediately
       setOpportunities(prev =>

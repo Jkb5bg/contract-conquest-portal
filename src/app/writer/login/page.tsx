@@ -27,7 +27,7 @@ export default function WriterLoginPage() {
       } else {
         window.location.href = '/writer/dashboard';
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Invalid email or password');
     } finally {
       setIsLoading(false);

@@ -10,11 +10,11 @@ import {
   Badge,
   LoadingSpinner,
   Alert,
-  Modal,
 } from '@/components/ui';
 import { getWriterProfile } from '@/lib/marketplaceApi';
 import { ProposalWriterPublicProfile } from '@/types/marketplace';
 import { useAuth } from '@/contexts/AuthContext';
+import { getErrorMessage } from '@/lib/errorUtils';
 import ContactWriterModal from '@/components/marketplace/ContactWriterModal';
 import BookWriterModal from '@/components/marketplace/BookWriterModal';
 import {
@@ -54,8 +54,8 @@ export default function WriterProfilePage() {
     try {
       const data = await getWriterProfile(writerId);
       setWriter(data);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load writer profile');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Failed to load writer profile'));
     } finally {
       setIsLoading(false);
     }

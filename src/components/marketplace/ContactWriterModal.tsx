@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Modal, Input, Select, Button, Alert } from '@/components/ui';
 import { contactWriter } from '@/lib/marketplaceApi';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { ProposalWriterContactRequest, ContactType } from '@/types/marketplace';
 
 interface ContactWriterModalProps {
@@ -40,7 +41,7 @@ export default function ContactWriterModal({
     try {
       await contactWriter(formData);
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to send message. Please try again.');
     } finally {
       setIsSubmitting(false);

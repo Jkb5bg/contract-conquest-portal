@@ -15,6 +15,7 @@ import {
   Alert,
 } from '@/components/ui';
 import { getMarketplaceWriters, getAvailableSpecializations } from '@/lib/marketplaceApi';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { ProposalWriterPublicProfile, MarketplaceFilters } from '@/types/marketplace';
 import {
   MagnifyingGlassIcon,
@@ -64,7 +65,7 @@ export default function MarketplacePage() {
 
       setWriters(writersData);
       setSpecializations(specializationsData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to load marketplace data');
     } finally {
       setIsLoading(false);

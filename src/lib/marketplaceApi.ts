@@ -1,7 +1,7 @@
 // Marketplace API Service
 // API calls for marketplace functionality
 
-import api from './api';
+import { apiClient } from './api';
 import {
   ProposalWriterPublicProfile,
   ProposalWriterRegistration,
@@ -24,7 +24,7 @@ import {
 export async function getMarketplaceWriters(
   filters?: MarketplaceFilters
 ): Promise<ProposalWriterPublicProfile[]> {
-  const response = await api.get('/marketplace/writers', { params: filters });
+  const response = await apiClient.get('/marketplace/writers', { params: filters });
   return response.data;
 }
 
@@ -32,7 +32,7 @@ export async function getMarketplaceWriters(
  * Get public profile for a specific writer
  */
 export async function getWriterProfile(writerId: string): Promise<ProposalWriterPublicProfile> {
-  const response = await api.get(`/marketplace/writers/${writerId}`);
+  const response = await apiClient.get(`/marketplace/writers/${writerId}`);
   return response.data;
 }
 
@@ -40,7 +40,7 @@ export async function getWriterProfile(writerId: string): Promise<ProposalWriter
  * Register as a new proposal writer
  */
 export async function registerWriter(data: ProposalWriterRegistration) {
-  const response = await api.post('/marketplace/writers/register', data);
+  const response = await apiClient.post('/marketplace/writers/register', data);
   return response.data;
 }
 
@@ -48,7 +48,7 @@ export async function registerWriter(data: ProposalWriterRegistration) {
  * Get available subscription tiers
  */
 export async function getAvailableTiers(): Promise<TierInfo[]> {
-  const response = await api.get('/marketplace/tiers');
+  const response = await apiClient.get('/marketplace/tiers');
   return response.data;
 }
 
@@ -56,7 +56,7 @@ export async function getAvailableTiers(): Promise<TierInfo[]> {
  * Get available specializations
  */
 export async function getAvailableSpecializations(): Promise<string[]> {
-  const response = await api.get('/marketplace/search/specializations');
+  const response = await apiClient.get('/marketplace/search/specializations');
   return response.data;
 }
 
@@ -64,7 +64,7 @@ export async function getAvailableSpecializations(): Promise<string[]> {
  * Search NAICS codes
  */
 export async function searchNaicsCodes(query: string): Promise<any[]> {
-  const response = await api.get('/marketplace/search/naics-codes', {
+  const response = await apiClient.get('/marketplace/search/naics-codes', {
     params: { query },
   });
   return response.data;
@@ -78,7 +78,7 @@ export async function searchNaicsCodes(query: string): Promise<any[]> {
  * Contact a writer (send inquiry)
  */
 export async function contactWriter(data: ProposalWriterContactRequest) {
-  const response = await api.post('/marketplace/contact', data);
+  const response = await apiClient.post('/marketplace/contact', data);
   return response.data;
 }
 
@@ -86,7 +86,7 @@ export async function contactWriter(data: ProposalWriterContactRequest) {
  * Create a booking request
  */
 export async function createBooking(data: ProposalWriterBookingRequest) {
-  const response = await api.post('/marketplace/bookings', data);
+  const response = await apiClient.post('/marketplace/bookings', data);
   return response.data;
 }
 
@@ -94,7 +94,7 @@ export async function createBooking(data: ProposalWriterBookingRequest) {
  * Get my bookings as a client
  */
 export async function getMyBookings(limit: number = 50): Promise<Booking[]> {
-  const response = await api.get('/marketplace/bookings/my-bookings', {
+  const response = await apiClient.get('/marketplace/bookings/my-bookings', {
     params: { limit },
   });
   return response.data;
@@ -104,7 +104,7 @@ export async function getMyBookings(limit: number = 50): Promise<Booking[]> {
  * Submit a review for a completed booking
  */
 export async function submitBookingReview(bookingId: string, review: BookingReview) {
-  const response = await api.post(`/marketplace/bookings/${bookingId}/review`, review);
+  const response = await apiClient.post(`/marketplace/bookings/${bookingId}/review`, review);
   return response.data;
 }
 
@@ -112,6 +112,6 @@ export async function submitBookingReview(bookingId: string, review: BookingRevi
  * Get current user's tier information and usage
  */
 export async function getMyTierInfo(): Promise<MyTierInfo> {
-  const response = await api.get('/marketplace/my-tier');
+  const response = await apiClient.get('/marketplace/my-tier');
   return response.data;
 }

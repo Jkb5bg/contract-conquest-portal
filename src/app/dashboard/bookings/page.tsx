@@ -13,6 +13,7 @@ import {
   Input,
 } from '@/components/ui';
 import { getMyBookings, submitBookingReview } from '@/lib/marketplaceApi';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { Booking, BookingReview } from '@/types/marketplace';
 import { CalendarIcon, StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
@@ -40,7 +41,7 @@ export default function ClientBookingsPage() {
     try {
       const data = await getMyBookings(100);
       setBookings(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to load bookings');
     } finally {
       setIsLoading(false);
@@ -74,7 +75,7 @@ export default function ClientBookingsPage() {
 
       setShowReviewModal(false);
       setSelectedBooking(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to submit review');
     } finally {
       setIsSubmitting(false);

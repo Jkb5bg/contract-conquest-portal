@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Modal, Input, Select, Button, Alert } from '@/components/ui';
 import { createBooking } from '@/lib/marketplaceApi';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { ProposalWriterBookingRequest, ServiceType } from '@/types/marketplace';
 
 interface BookWriterModalProps {
@@ -42,7 +43,7 @@ export default function BookWriterModal({
     try {
       await createBooking(formData);
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to create booking. Please try again.');
     } finally {
       setIsSubmitting(false);

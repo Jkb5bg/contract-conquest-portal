@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardBody, Input, Select, Button, Alert, Badge } from '@/components/ui';
 import { getWriterProfile, updateWriterProfile } from '@/lib/writerApi';
-import { ProposalWriterUpdateProfile } from '@/types/marketplace';
-import { UserCircleIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ProposalWriterUpdateProfile, ProposalWriterPublicProfile } from '@/types/marketplace';
+import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function WriterProfilePage() {
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<ProposalWriterPublicProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export default function WriterProfilePage() {
         service_locations: data.service_locations || [],
         naics_expertise: data.naics_expertise || [],
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to load profile');
     } finally {
       setIsLoading(false);
@@ -66,7 +66,7 @@ export default function WriterProfilePage() {
       await loadProfile(); // Reload to get updated data
 
       setTimeout(() => setSuccess(false), 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to update profile');
     } finally {
       setIsSaving(false);
