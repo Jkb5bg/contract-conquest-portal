@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Card,
   CardHeader,
@@ -148,11 +149,7 @@ export default function MarketplacePage() {
         </Button>
       </div>
 
-      {error && (
-        <Alert type="error" dismissible onDismiss={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {/* Search Bar */}
       <Card>
@@ -270,9 +267,11 @@ export default function MarketplacePage() {
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
                     {writer.profile_photo_url ? (
-                      <img
+                      <Image
                         src={writer.profile_photo_url}
                         alt={writer.full_name}
+                        width={64}
+                        height={64}
                         className="w-16 h-16 rounded-full object-cover"
                       />
                     ) : (

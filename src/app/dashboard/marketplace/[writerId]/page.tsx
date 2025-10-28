@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Card,
   CardHeader,
@@ -43,11 +44,7 @@ export default function WriterProfilePage() {
   const [showContactModal, setShowContactModal] = useState(false);
   const [showBookModal, setShowBookModal] = useState(false);
 
-  useEffect(() => {
-    loadWriter();
-  }, [writerId]);
-
-  const loadWriter = async () => {
+  const loadWriter = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -59,7 +56,11 @@ export default function WriterProfilePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [writerId]);
+
+  useEffect(() => {
+    loadWriter();
+  }, [loadWriter]);
 
   const renderStars = (rating: number) => {
     return (
@@ -95,7 +96,7 @@ export default function WriterProfilePage() {
         >
           Back to Marketplace
         </Button>
-        <Alert type="error">{error || 'Writer not found'}</Alert>
+        <Alert type="error" message={error || 'Writer not found'} />
       </div>
     );
   }
@@ -118,9 +119,11 @@ export default function WriterProfilePage() {
             {/* Photo */}
             <div className="flex-shrink-0">
               {writer.profile_photo_url ? (
-                <img
+                <Image
                   src={writer.profile_photo_url}
                   alt={writer.full_name}
+                  width={128}
+                  height={128}
                   className="w-32 h-32 rounded-full object-cover"
                 />
               ) : (

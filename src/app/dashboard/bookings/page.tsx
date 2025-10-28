@@ -113,11 +113,7 @@ export default function ClientBookingsPage() {
         </Link>
       </div>
 
-      {error && (
-        <Alert type="error" dismissible onDismiss={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {bookings.length === 0 ? (
         <Card>
@@ -307,7 +303,7 @@ export default function ClientBookingsPage() {
               />
             </div>
 
-            {error && <Alert type="error">{error}</Alert>}
+            {error && <Alert type="error" message={error} />}
 
             <div className="flex gap-3 justify-end pt-4">
               <Button
