@@ -28,6 +28,7 @@ export default function WriterLoginPage() {
         window.location.href = '/writer/dashboard';
       }
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Invalid email or password');
     } finally {
       setIsLoading(false);

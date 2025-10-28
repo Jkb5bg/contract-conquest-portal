@@ -38,6 +38,7 @@ export default function WriterDashboardPage() {
       setProfile(profileData);
       setBookings(bookingsData);
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to load dashboard data');
     } finally {
       setIsLoading(false);

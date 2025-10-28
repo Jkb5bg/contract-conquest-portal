@@ -21,6 +21,7 @@ export default function WriterForgotPasswordPage() {
       await writerRequestPasswordReset({ email });
       setSuccess(true);
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to send reset email');
     } finally {
       setIsLoading(false);

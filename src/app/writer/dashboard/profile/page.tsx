@@ -48,6 +48,7 @@ export default function WriterProfilePage() {
         naics_expertise: data.naics_expertise || [],
       });
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to load profile');
     } finally {
       setIsLoading(false);
@@ -67,6 +68,7 @@ export default function WriterProfilePage() {
 
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to update profile');
     } finally {
       setIsSaving(false);
