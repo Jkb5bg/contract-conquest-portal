@@ -40,6 +40,7 @@ export default function ClientBookingsPage() {
       const data = await getMyBookings(100);
       setBookings(data);
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to load bookings');
     } finally {
       setIsLoading(false);
@@ -74,6 +75,7 @@ export default function ClientBookingsPage() {
       setShowReviewModal(false);
       setSelectedBooking(null);
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to submit review');
     } finally {
       setIsSubmitting(false);

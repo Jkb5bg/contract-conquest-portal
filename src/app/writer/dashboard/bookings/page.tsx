@@ -41,6 +41,7 @@ export default function WriterBookingsPage() {
       setBookings(data);
       setFilteredBookings(data);
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to load bookings');
     } finally {
       setIsLoading(false);
@@ -75,6 +76,7 @@ export default function WriterBookingsPage() {
       setShowStatusModal(false);
       setSelectedBooking(null);
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to update booking status');
     } finally {
       setIsUpdating(false);

@@ -66,6 +66,7 @@ export default function MarketplacePage() {
       setWriters(writersData);
       setSpecializations(specializationsData);
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to load marketplace data');
     } finally {
       setIsLoading(false);

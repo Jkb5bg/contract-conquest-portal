@@ -41,6 +41,7 @@ export default function ContactWriterModal({
       await contactWriter(formData);
       onSuccess();
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to send message. Please try again.');
     } finally {
       setIsSubmitting(false);

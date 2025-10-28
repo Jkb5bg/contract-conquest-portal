@@ -43,6 +43,7 @@ export default function BookWriterModal({
       await createBooking(formData);
       onSuccess();
     } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to create booking. Please try again.');
     } finally {
       setIsSubmitting(false);
