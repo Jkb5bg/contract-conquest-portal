@@ -7,7 +7,7 @@ import { useWriterAuth } from '@/contexts/WriterAuthContext';
 import { LockClosedIcon } from '@heroicons/react/24/outline';
 
 export default function WriterLoginPage() {
-  const { login, isPasswordTemporary } = useWriterAuth();
+  const { login } = useWriterAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);

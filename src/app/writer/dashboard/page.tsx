@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Card, CardHeader, CardBody, Button, Badge, LoadingSpinner, Alert, StatCard } from '@/components/ui';
 import { useWriterAuth } from '@/contexts/WriterAuthContext';
 import { getWriterProfile, getWriterBookings } from '@/lib/writerApi';
-import { getErrorMessage } from '@/lib/errorUtils';
 import { Booking, ProposalWriterPublicProfile } from '@/types/marketplace';
 import {
   UserCircleIcon,
@@ -17,7 +16,7 @@ import {
 
 export default function WriterDashboardPage() {
   const { user } = useWriterAuth();
-  const [profile, setProfile] = useState<ProposalWriterPublicProfile | null>(null);
+  const [, setProfile] = useState<ProposalWriterPublicProfile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +45,7 @@ export default function WriterDashboardPage() {
   };
 
   const getBookingStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, string> = {
       requested: 'warning',
       accepted: 'info',
       in_progress: 'primary',

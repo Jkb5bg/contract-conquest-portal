@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardBody, Input, Button, Alert } from '@/components/ui';
 import { registerWriter } from '@/lib/marketplaceApi';
-import { getErrorMessage } from '@/lib/errorUtils';
 import { ProposalWriterRegistration } from '@/types/marketplace';
 import { UserPlusIcon } from '@heroicons/react/24/outline';
 
@@ -49,7 +48,7 @@ export default function WriterRegisterPage() {
     }
   };
 
-  const handleChange = (field: keyof ProposalWriterRegistration, value: any) => {
+  const handleChange = (field: keyof ProposalWriterRegistration, value: string | number | null) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value === '' ? null : value,
@@ -137,7 +136,7 @@ export default function WriterRegisterPage() {
                     required
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    You'll receive temporary login credentials at this email
+                    You&apos;ll receive temporary login credentials at this email
                   </p>
                 </div>
 

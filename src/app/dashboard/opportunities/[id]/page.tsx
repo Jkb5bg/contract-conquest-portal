@@ -60,6 +60,7 @@ export default function OpportunityDetailsPage() {
 
   useEffect(() => {
     fetchOpportunityDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opportunityId]);
 
   const fetchOpportunityDetails = async () => {

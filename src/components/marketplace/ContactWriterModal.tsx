@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Modal, Input, Select, Button, Alert } from '@/components/ui';
 import { contactWriter } from '@/lib/marketplaceApi';
-import { getErrorMessage } from '@/lib/errorUtils';
 import { ProposalWriterContactRequest, ContactType } from '@/types/marketplace';
 
 interface ContactWriterModalProps {
@@ -48,7 +47,7 @@ export default function ContactWriterModal({
     }
   };
 
-  const handleChange = (field: keyof ProposalWriterContactRequest, value: any) => {
+  const handleChange = (field: keyof ProposalWriterContactRequest, value: string | null) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,

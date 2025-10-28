@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardBody, Input, Button, Alert } from '@/components/ui';
 import { writerRequestPasswordReset } from '@/lib/writerApi';
-import { getErrorMessage } from '@/lib/errorUtils';
 import { EnvelopeIcon } from '@heroicons/react/24/outline';
 
 export default function WriterForgotPasswordPage() {
@@ -43,7 +42,7 @@ export default function WriterForgotPasswordPage() {
                 password reset link shortly.
               </p>
               <p className="text-sm text-gray-400">
-                Check your spam folder if you don't see it in your inbox.
+                Check your spam folder if you don&apos;t see it in your inbox.
               </p>
               <Link href="/writer/login">
                 <Button variant="primary" fullWidth>
@@ -74,7 +73,7 @@ export default function WriterForgotPasswordPage() {
               {error && <Alert type="error">{error}</Alert>}
 
               <Alert type="info">
-                Enter your email address and we'll send you a link to reset your password.
+                Enter your email address and we&apos;ll send you a link to reset your password.
               </Alert>
 
               <div>

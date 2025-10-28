@@ -7,7 +7,7 @@ import { ProposalWriterUpdateProfile, ProposalWriterPublicProfile } from '@/type
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function WriterProfilePage() {
-  const [profile, setProfile] = useState<ProposalWriterPublicProfile | null>(null);
+  const [, setProfile] = useState<ProposalWriterPublicProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export default function WriterProfilePage() {
     }
   };
 
-  const handleChange = (field: keyof ProposalWriterUpdateProfile, value: any) => {
+  const handleChange = (field: keyof ProposalWriterUpdateProfile, value: string | number | boolean | string[] | null) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value === '' ? null : value,

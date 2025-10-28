@@ -59,6 +59,7 @@ export default function ConsistentOpportunitiesPage() {
 
   useEffect(() => {
     fetchOpportunities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, sortBy]);
 
   const fetchOpportunities = async () => {

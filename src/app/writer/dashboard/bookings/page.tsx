@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardBody, Button, Badge, LoadingSpinner, Alert, Modal, Select } from '@/components/ui';
 import { getWriterBookings, updateBookingStatus } from '@/lib/writerApi';
-import { getErrorMessage } from '@/lib/errorUtils';
 import { Booking, BookingStatus, BookingStatusUpdate } from '@/types/marketplace';
 import { CalendarIcon, FunnelIcon } from '@heroicons/react/24/outline';
 
@@ -83,7 +82,7 @@ export default function WriterBookingsPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, any> = {
+    const variants: Record<string, string> = {
       requested: 'warning',
       accepted: 'info',
       in_progress: 'primary',

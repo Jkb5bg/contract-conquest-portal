@@ -361,7 +361,7 @@ export default function WriterProfilePage() {
                   <div className="flex items-center gap-2 mb-2">
                     {renderStars(testimonial.rating)}
                   </div>
-                  <p className="text-gray-300 mb-3">"{testimonial.review_text}"</p>
+                  <p className="text-gray-300 mb-3">&ldquo;{testimonial.review_text}&rdquo;</p>
                   <div className="flex items-center justify-between text-sm text-gray-400">
                     <div>
                       <span className="font-medium text-white">

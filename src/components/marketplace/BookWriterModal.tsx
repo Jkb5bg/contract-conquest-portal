@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Modal, Input, Select, Button, Alert } from '@/components/ui';
 import { createBooking } from '@/lib/marketplaceApi';
-import { getErrorMessage } from '@/lib/errorUtils';
 import { ProposalWriterBookingRequest, ServiceType } from '@/types/marketplace';
 
 interface BookWriterModalProps {
@@ -50,7 +49,7 @@ export default function BookWriterModal({
     }
   };
 
-  const handleChange = (field: keyof ProposalWriterBookingRequest, value: any) => {
+  const handleChange = (field: keyof ProposalWriterBookingRequest, value: string | number | null) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value === '' ? null : value,
