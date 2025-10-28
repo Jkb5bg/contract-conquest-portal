@@ -38,8 +38,10 @@ export default function WriterBookingsPage() {
 
     try {
       const data = await getWriterBookings(100);
-      setBookings(data);
-      setFilteredBookings(data);
+      // Ensure data is an array
+      const bookingsArray = Array.isArray(data) ? data : [];
+      setBookings(bookingsArray);
+      setFilteredBookings(bookingsArray);
     } catch (err: unknown) {
       // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to load bookings');
