@@ -127,8 +127,8 @@ export default function WriterProfilePage() {
         <p className="mt-2 text-gray-400">Update your marketplace profile</p>
       </div>
 
-      {error && <Alert type="error" dismissible onDismiss={() => setError(null)}>{error}</Alert>}
-      {success && <Alert type="success">Profile updated successfully!</Alert>}
+      {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
+      {success && <Alert type="success" message="Profile updated successfully!" />}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}

@@ -83,15 +83,15 @@ export default function WriterBookingsPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, string> = {
+  const getStatusBadge = (status: string): 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' => {
+    const variants: Record<string, 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'> = {
       requested: 'warning',
       accepted: 'info',
       in_progress: 'primary',
       completed: 'success',
       cancelled: 'danger',
     };
-    return variants[status] || 'secondary';
+    return variants[status] || 'info';
   };
 
   const getAvailableStatuses = (currentStatus: BookingStatus): BookingStatus[] => {
@@ -125,7 +125,7 @@ export default function WriterBookingsPage() {
         </Button>
       </div>
 
-      {error && <Alert type="error" dismissible onDismiss={() => setError(null)}>{error}</Alert>}
+      {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {/* Filters */}
       <Card>
@@ -297,7 +297,7 @@ export default function WriterBookingsPage() {
               />
             </div>
 
-            {error && <Alert type="error">{error}</Alert>}
+            {error && <Alert type="error" message={error} />}
 
             <div className="flex gap-3 justify-end pt-4">
               <Button

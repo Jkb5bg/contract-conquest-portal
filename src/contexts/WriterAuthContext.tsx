@@ -8,7 +8,7 @@ import {
   getWriterProfile,
 } from '@/lib/writerApi';
 import { WriterLoginRequest, WriterLoginResponse } from '@/types/marketplace';
-import { ChangePasswordRequest } from '@/types/auth';
+import { PasswordChangeRequest } from '@/types/auth';
 
 interface WriterUser {
   writer_id: string;
@@ -23,7 +23,7 @@ interface WriterAuthContextType {
   isPasswordTemporary: boolean;
   login: (credentials: WriterLoginRequest) => Promise<WriterLoginResponse>;
   logout: () => void;
-  changePassword: (data: ChangePasswordRequest) => Promise<void>;
+  changePassword: (data: PasswordChangeRequest) => Promise<void>;
   refreshUserProfile: () => Promise<void>;
 }
 
@@ -109,7 +109,7 @@ export function WriterAuthProvider({ children }: { children: ReactNode }) {
     setIsPasswordTemporary(false);
   };
 
-  const changePassword = async (data: ChangePasswordRequest) => {
+  const changePassword = async (data: PasswordChangeRequest) => {
     await writerChangePassword(data);
     setIsPasswordTemporary(false);
     localStorage.setItem('writer_temp_password', 'false');

@@ -49,7 +49,7 @@ export default function WriterLoginPage() {
         <Card>
           <CardBody>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {error && <Alert type="error">{error}</Alert>}
+              {error && <Alert type="error" message={error} />}
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">

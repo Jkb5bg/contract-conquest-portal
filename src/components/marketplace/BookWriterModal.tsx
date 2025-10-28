@@ -60,11 +60,9 @@ export default function BookWriterModal({
   return (
     <Modal isOpen onClose={onClose} title={`Book ${writerName}`} size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
-        {error && <Alert type="error">{error}</Alert>}
+        {error && <Alert type="error" message={error} />}
 
-        <Alert type="info">
-          This is a booking request. The writer will review and respond to your request.
-        </Alert>
+        <Alert type="info" message="This is a booking request. The writer will review and respond to your request." />
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">

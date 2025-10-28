@@ -11,7 +11,7 @@ import {
   BookingStatusUpdate,
   Booking,
 } from '@/types/marketplace';
-import { ChangePasswordRequest } from '@/types/auth';
+import { PasswordChangeRequest } from '@/types/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -97,7 +97,7 @@ export async function writerLogin(credentials: WriterLoginRequest): Promise<Writ
   return response.data;
 }
 
-export async function writerChangePassword(data: ChangePasswordRequest) {
+export async function writerChangePassword(data: PasswordChangeRequest) {
   const response = await writerApi.post('/writer-auth/change-password', data);
   return response.data;
 }
