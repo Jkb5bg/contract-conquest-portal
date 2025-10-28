@@ -13,7 +13,7 @@ import {
   ClockIcon,
   ChartBarIcon,
   StarIcon,
-} from '@/heroicons/react/24/outline';
+} from '@heroicons/react/24/outline';
 
 export default function WriterDashboardPage() {
   const { user } = useWriterAuth();
