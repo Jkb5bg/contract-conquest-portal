@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Card, CardBody, Input, Button, Alert } from '@/components/ui';
 import { writerRequestPasswordReset } from '@/lib/writerApi';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { EnvelopeIcon } from '@heroicons/react/24/outline';
 
 export default function WriterForgotPasswordPage() {
@@ -20,7 +21,7 @@ export default function WriterForgotPasswordPage() {
     try {
       await writerRequestPasswordReset({ email });
       setSuccess(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to send reset email');
     } finally {
       setIsLoading(false);
@@ -64,7 +65,7 @@ export default function WriterForgotPasswordPage() {
             <EnvelopeIcon className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Forgot Password?</h1>
-          <p className="text-gray-400">We'll send you a reset link</p>
+          <p className="text-gray-400">We&apos;ll send you a reset link</p>
         </div>
 
         <Card>

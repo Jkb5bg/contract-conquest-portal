@@ -5,19 +5,19 @@ import Link from 'next/link';
 import { Card, CardHeader, CardBody, Button, Badge, LoadingSpinner, Alert, StatCard } from '@/components/ui';
 import { useWriterAuth } from '@/contexts/WriterAuthContext';
 import { getWriterProfile, getWriterBookings } from '@/lib/writerApi';
-import { Booking } from '@/types/marketplace';
+import { getErrorMessage } from '@/lib/errorUtils';
+import { Booking, ProposalWriterPublicProfile } from '@/types/marketplace';
 import {
   UserCircleIcon,
   CalendarIcon,
   CheckCircleIcon,
   ClockIcon,
-  ChartBarIcon,
   StarIcon,
 } from '@heroicons/react/24/outline';
 
 export default function WriterDashboardPage() {
   const { user } = useWriterAuth();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<ProposalWriterPublicProfile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export default function WriterDashboardPage() {
 
       setProfile(profileData);
       setBookings(bookingsData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.response?.data?.detail || 'Failed to load dashboard data');
     } finally {
       setIsLoading(false);

@@ -16,7 +16,6 @@ import {
   PencilIcon,
   DocumentTextIcon,
   ClockIcon,
-  ChartBarIcon,
   SparklesIcon,
   ArrowRightIcon
 } from '@heroicons/react/24/outline';
