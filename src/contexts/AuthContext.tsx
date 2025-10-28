@@ -203,7 +203,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (expiresAt && now >= expiresAt) {
             console.log('Token expired, attempting refresh...');
             await attemptTokenRefresh();
-            return;
+            // After refresh attempt, re-check if we have a valid token
+            const newToken = localStorage.getItem('access_token');
+            if (!newToken) {
+              setIsLoading(false);
+              return;
+            }
           }
 
           // Token is valid, try to fetch fresh user data from backend
@@ -223,6 +228,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             persistUser(userInfo);
             console.log('✅ User loaded from backend:', userInfo.email);
 
+            // Ensure cookie is set/refreshed
+            const currentToken = localStorage.getItem('access_token');
+            if (currentToken) {
+              const maxAge = 7 * 24 * 60 * 60; // 7 days
+              document.cookie = `access_token=${currentToken}; path=/; max-age=${maxAge}; SameSite=Lax`;
+            }
+
             // Schedule token refresh if needed
             if (expiresAt) {
               const daysUntilExpiry = (expiresAt - now) / (24 * 60 * 60);
@@ -239,10 +251,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (storedUser) {
               setUser(storedUser);
               console.log('✅ User loaded from localStorage (backend unavailable):', storedUser.email);
+
+              // Still ensure cookie is set for middleware
+              const currentToken = localStorage.getItem('access_token');
+              if (currentToken) {
+                const maxAge = 7 * 24 * 60 * 60; // 7 days
+                document.cookie = `access_token=${currentToken}; path=/; max-age=${maxAge}; SameSite=Lax`;
+              }
             } else {
               // No fallback, clear everything
               console.log('No cached user, logging out');
               localStorage.clear();
+              document.cookie = 'access_token=; path=/; max-age=0';
               setUser(null);
             }
           }
@@ -305,15 +325,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Redirect after a brief moment to ensure state updates
-      // The middleware will enforce route protection
-      setTimeout(() => {
-        if (data.is_password_temporary) {
-          router.push('/change-password');
-        } else {
-          router.push('/dashboard');
-        }
-      }, 100);
+      // Use window.location instead of router.push to ensure proper cookie propagation
+      // This forces a full page reload which ensures middleware sees the cookie
+      if (data.is_password_temporary) {
+        window.location.href = '/change-password';
+      } else {
+        window.location.href = '/dashboard';
+      }
     } catch (error: unknown) {
       let message = 'Login failed';
 
@@ -328,7 +346,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       throw new Error(message);
     }
-  }, [scheduleTokenRefresh, persistUser, router]);
+  }, [scheduleTokenRefresh, persistUser]);
 
   const logout = useCallback(() => {
     cancelTokenRefresh();

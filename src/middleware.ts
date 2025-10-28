@@ -3,14 +3,18 @@ import { NextRequest, NextResponse } from 'next/server';
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const token = request.cookies.get('access_token')?.value;
-
-  // Also check localStorage token as fallback (for immediate redirects after login)
   const hasToken = !!token;
+
+  // Log for debugging authentication issues
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Middleware] Path: ${pathname}, Has Token: ${hasToken}`);
+  }
 
   // Route: /login
   if (pathname === '/login') {
     // If user has token, redirect to dashboard
     if (hasToken) {
+      console.log('[Middleware] Authenticated user accessing /login, redirecting to dashboard');
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     // Otherwise, allow access to login page
@@ -21,6 +25,7 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/change-password')) {
     // If no token, redirect to login
     if (!hasToken) {
+      console.log(`[Middleware] Unauthenticated access to ${pathname}, redirecting to login`);
       return NextResponse.redirect(new URL('/login', request.url));
     }
     // Allow access
