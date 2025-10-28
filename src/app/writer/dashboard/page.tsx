@@ -6,6 +6,7 @@ import { Card, CardHeader, CardBody, Button, Badge, LoadingSpinner, Alert, StatC
 import { useWriterAuth } from '@/contexts/WriterAuthContext';
 import { getWriterProfile, getWriterBookings } from '@/lib/writerApi';
 import { Booking, ProposalWriterPublicProfile } from '@/types/marketplace';
+import { getErrorMessage } from '@/lib/errorUtils';
 import {
   UserCircleIcon,
   CalendarIcon,
@@ -16,7 +17,7 @@ import {
 
 export default function WriterDashboardPage() {
   const { user } = useWriterAuth();
-  const [, setProfile] = useState<ProposalWriterPublicProfile | null>(null);
+  const [profile, setProfile] = useState<ProposalWriterPublicProfile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,22 +39,21 @@ export default function WriterDashboardPage() {
       setProfile(profileData);
       setBookings(bookingsData);
     } catch (err: unknown) {
-      // @ts-expect-error Accessing response property on unknown error type
-      setError(err.response?.data?.detail || 'Failed to load dashboard data');
+      setError(getErrorMessage(err, 'Failed to load dashboard data'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getBookingStatusBadge = (status: string) => {
-    const variants: Record<string, string> = {
+  const getBookingStatusBadge = (status: string): 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' => {
+    const variants: Record<string, 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info'> = {
       requested: 'warning',
       accepted: 'info',
       in_progress: 'primary',
       completed: 'success',
       cancelled: 'danger',
     };
-    return variants[status] || 'secondary';
+    return variants[status] || 'info';
   };
 
   if (isLoading) {
@@ -79,51 +79,48 @@ export default function WriterDashboardPage() {
       </div>
 
       {error && (
-        <Alert type="error" dismissible onDismiss={() => setError(null)}>
-          {error}
-        </Alert>
+        <Alert type="error" message={error} onClose={() => setError(null)} />
       )}
 
       {/* Profile Completion Alert */}
       {profile && !profile.bio && (
-        <Alert type="warning">
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
           <div className="flex items-center justify-between">
-            <span>Your profile is incomplete. Complete it to appear in the marketplace!</span>
+            <span className="text-yellow-200">Your profile is incomplete. Complete it to appear in the marketplace!</span>
             <Link href="/writer/dashboard/profile">
               <Button variant="primary" size="sm">
                 Complete Profile
               </Button>
             </Link>
           </div>
-        </Alert>
+        </div>
       )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="Pending Requests"
+          label="Pending Requests"
           value={pendingBookings}
           icon={<ClockIcon className="w-6 h-6" />}
-          trend={pendingBookings > 0 ? 'up' : undefined}
-          variant="warning"
+          color="yellow"
         />
         <StatCard
-          title="Active Bookings"
+          label="Active Bookings"
           value={activeBookings}
           icon={<CalendarIcon className="w-6 h-6" />}
-          variant="primary"
+          color="purple"
         />
         <StatCard
-          title="Completed"
+          label="Completed"
           value={completedBookings}
           icon={<CheckCircleIcon className="w-6 h-6" />}
-          variant="success"
+          color="green"
         />
         <StatCard
-          title="Average Rating"
+          label="Average Rating"
           value={profile?.average_rating?.toFixed(1) || 'N/A'}
           icon={<StarIcon className="w-6 h-6" />}
-          variant="info"
+          color="blue"
         />
       </div>
 

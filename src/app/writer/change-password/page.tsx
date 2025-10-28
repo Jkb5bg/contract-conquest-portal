@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardBody, Input, Button, Alert } from '@/components/ui';
 import { useWriterAuth } from '@/contexts/WriterAuthContext';
 import { validatePassword } from '@/lib/passwordValidation';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { LockClosedIcon } from '@heroicons/react/24/outline';
 
 export default function WriterChangePasswordPage() {
@@ -60,8 +61,7 @@ export default function WriterChangePasswordPage() {
       window.location.href = '/writer/dashboard';
     } catch (err: unknown) {
       setError(
-        err.response?.data?.detail ||
-          'Failed to change password. Please check your current password.'
+        getErrorMessage(err, 'Failed to change password. Please check your current password.')
       );
     } finally {
       setIsLoading(false);
@@ -89,12 +89,12 @@ export default function WriterChangePasswordPage() {
 
         <Card>
           <CardBody>
-            <Alert type="warning" className="mb-6">
-              You are using a temporary password. Please change it to continue.
-            </Alert>
+            <div className="mb-6">
+              <Alert type="warning" message="You are using a temporary password. Please change it to continue." />
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {error && <Alert type="error">{error}</Alert>}
+              {error && <Alert type="error" message={error} />}
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">

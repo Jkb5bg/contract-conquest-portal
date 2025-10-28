@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Card, CardBody, Input, Button, Alert } from '@/components/ui';
 import { registerWriter } from '@/lib/marketplaceApi';
 import { ProposalWriterRegistration } from '@/types/marketplace';
+import { getErrorMessage } from '@/lib/errorUtils';
 import { UserPlusIcon } from '@heroicons/react/24/outline';
 
 export default function WriterRegisterPage() {
@@ -40,8 +41,7 @@ export default function WriterRegisterPage() {
       }, 3000);
     } catch (err: unknown) {
       setError(
-        err.response?.data?.detail ||
-          'Failed to register. Please check your information and try again.'
+        getErrorMessage(err, 'Failed to register. Please check your information and try again.')
       );
     } finally {
       setIsSubmitting(false);
@@ -105,7 +105,7 @@ export default function WriterRegisterPage() {
         <Card>
           <CardBody>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {error && <Alert type="error">{error}</Alert>}
+              {error && <Alert type="error" message={error} />}
 
               {/* Basic Information */}
               <div className="space-y-4">
