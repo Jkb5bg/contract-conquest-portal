@@ -7,11 +7,12 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   hoverable?: boolean;
+  hover?: boolean;
 }
 
-export function Card({ children, className = '', hoverable = false }: CardProps) {
+export function Card({ children, className = '', hoverable = false, hover = false }: CardProps) {
   return (
-    <div className={`${components.card} ${hoverable ? 'hover:shadow-lg' : ''} ${className}`}>
+    <div className={`${components.card} ${(hoverable || hover) ? 'hover:shadow-lg transition-shadow cursor-pointer' : ''} ${className}`}>
       {children}
     </div>
   );
@@ -35,6 +36,8 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   icon?: React.ReactNode;
+  leftIcon?: React.ReactNode;
+  fullWidth?: boolean;
 }
 
 export function Button({
@@ -43,6 +46,8 @@ export function Button({
   size = 'md',
   isLoading = false,
   icon,
+  leftIcon,
+  fullWidth = false,
   className = '',
   disabled,
   ...props
@@ -55,14 +60,14 @@ export function Button({
 
   return (
     <button
-      className={`${components.button.base} ${components.button[variant]} ${sizeClasses[size]} ${className} flex items-center justify-center`}
+      className={`${components.button.base} ${components.button[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full' : ''} ${className} flex items-center justify-center`}
       disabled={disabled || isLoading}
       {...props}
     >
       {isLoading ? (
         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-      ) : icon ? (
-        <span className="mr-2">{icon}</span>
+      ) : (icon || leftIcon) ? (
+        <span className="mr-2">{icon || leftIcon}</span>
       ) : null}
       {children}
     </button>
@@ -72,13 +77,24 @@ export function Button({
 // Badge Component
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info';
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-export function Badge({ children, variant = 'primary', className = '' }: BadgeProps) {
+export function Badge({ children, variant = 'primary', size = 'md', className = '' }: BadgeProps) {
+  const sizeClasses = {
+    sm: 'text-xs px-2 py-0.5',
+    md: 'text-sm px-2.5 py-0.5',
+    lg: 'text-base px-3 py-1',
+  };
+
+  const variantClass = variant === 'secondary'
+    ? 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+    : components.badge[variant as keyof typeof components.badge];
+
   return (
-    <span className={`${components.badge.base} ${components.badge[variant]} ${className}`}>
+    <span className={`${components.badge.base} ${variantClass} ${sizeClasses[size]} ${className}`}>
       {children}
     </span>
   );
@@ -121,10 +137,11 @@ export function Input({ label, error, icon, className = '', ...props }: InputPro
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
-  options: { value: string; label: string }[];
+  options?: { value: string; label: string }[];
+  children?: React.ReactNode;
 }
 
-export function Select({ label, error, options, className = '', ...props }: SelectProps) {
+export function Select({ label, error, options, children, className = '', ...props }: SelectProps) {
   return (
     <div className="space-y-2">
       {label && (
@@ -136,11 +153,11 @@ export function Select({ label, error, options, className = '', ...props }: Sele
         className={`${components.input} ${error ? 'border-red-500' : ''} ${className}`}
         {...props}
       >
-        {options.map((option) => (
+        {options ? options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
-        ))}
+        )) : children}
       </select>
       {error && (
         <p className="text-sm text-red-400">{error}</p>
