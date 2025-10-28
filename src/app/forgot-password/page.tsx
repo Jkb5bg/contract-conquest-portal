@@ -38,11 +38,20 @@ function ForgotPasswordClient() {
   });
 
   useEffect(() => {
-    if (isResetFlow && !token) {
-      setError('Invalid or missing reset token');
-      setTokenValid(false);
-    }
-  }, [token, isResetFlow]);
+    if (!isResetFlow || !token) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        await apiClient.post('/auth/validate-reset-token', { token }); // adjust to your API
+        if (!cancelled) setTokenValid(true);
+      } catch {
+        if (!cancelled) setTokenValid(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isResetFlow, token]);
 
   useEffect(() => {
     if (isResetFlow) {
@@ -59,12 +68,15 @@ function ForgotPasswordClient() {
   // Request password reset (send email)
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return; // guard
     setError('');
     setIsSubmitting(true);
 
     try {
-      await apiClient.post('/auth/request-reset', { email });
+      const cleanEmail = email.trim().toLowerCase();
+      await apiClient.post('/auth/forgot-password', { email: cleanEmail });
       setRequestSuccess(true);
+      setIsSubmitting(false); // ✅ reset here
     } catch (err: unknown) {
       // @ts-expect-error Error handling
       setError(err?.response?.data?.detail || 'Failed to send reset email. Please try again.');
@@ -83,26 +95,44 @@ function ForgotPasswordClient() {
     return null;
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+const handleResetPassword = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
 
-    const passwordError = validatePassword(newPassword);
-    if (passwordError) return setError(passwordError);
+  const passwordError = validatePassword(newPassword);
+  if (passwordError) return setError(passwordError);
 
-    if (newPassword !== confirmPassword) return setError('Passwords do not match');
+  if (newPassword !== confirmPassword) return setError('Passwords do not match');
 
-    setIsSubmitting(true);
-    try {
-      await apiClient.post('/auth/reset-password', { token, new_password: newPassword });
-      setResetSuccess(true);
-      setTimeout(() => router.push('/login'), 3000);
-    } catch (err: unknown) {
-      // @ts-expect-error Error handling
-      setError(err?.response?.data?.detail || 'Failed to reset password. The link may have expired.');
-      setIsSubmitting(false);
+  setIsSubmitting(true);
+
+  try {
+    const payload = {
+      token: token,              // include token in body
+      new_password: newPassword, // include new password in body
+    };
+
+    await apiClient.post('/auth/reset-password', payload);
+
+    setResetSuccess(true);
+    setTimeout(() => router.push('/login'), 3000);
+  } catch (err: unknown) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    const msg = err?.response?.data?.detail || 'Failed to reset password. The link may have expired.';
+    setError(msg);
+
+    // If backend returns 422/400 for bad/expired token, mark invalid
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    if (err?.response?.status === 400 || err?.response?.status === 422) {
+      setTokenValid(false);
     }
-  };
+
+    setIsSubmitting(false);
+  }
+};
+
 
   // Invalid token state
   if (isResetFlow && !tokenValid) {
@@ -165,6 +195,7 @@ function ForgotPasswordClient() {
                   setRequestSuccess(false);
                   setEmail('');
                   setError('');
+                  setIsSubmitting(false); // ✅ make the form active again
                 }}
                 className="block w-full text-gray-400 hover:text-purple-400 transition-colors text-sm"
               >
