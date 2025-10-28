@@ -82,15 +82,15 @@ export default function ClientBookingsPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, string> = {
+  const getStatusBadge = (status: string): 'primary' | 'success' | 'warning' | 'danger' | 'info' => {
+    const variants: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
       requested: 'warning',
       accepted: 'info',
       in_progress: 'primary',
       completed: 'success',
       cancelled: 'danger',
     };
-    return variants[status] || 'secondary';
+    return variants[status] || 'info';
   };
 
   if (isLoading) {
