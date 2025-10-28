@@ -258,7 +258,7 @@ export default function WriterProfilePage() {
       )}
 
       {/* Specializations */}
-      {writer.specializations.length > 0 && (
+      {Array.isArray(writer.specializations) && writer.specializations.length > 0 && (
         <Card>
           <CardHeader>
             <h2 className="text-xl font-semibold text-white">Specializations</h2>
@@ -276,7 +276,7 @@ export default function WriterProfilePage() {
       )}
 
       {/* Qualifications */}
-      {writer.qualifications.length > 0 && (
+      {Array.isArray(writer.qualifications) && writer.qualifications.length > 0 && (
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -298,7 +298,7 @@ export default function WriterProfilePage() {
       )}
 
       {/* Portfolio */}
-      {writer.portfolio_items.length > 0 && (
+      {Array.isArray(writer.portfolio_items) && writer.portfolio_items.length > 0 && (
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -349,7 +349,7 @@ export default function WriterProfilePage() {
       )}
 
       {/* Testimonials */}
-      {writer.testimonials.length > 0 && (
+      {Array.isArray(writer.testimonials) && writer.testimonials.length > 0 && (
         <Card>
           <CardHeader>
             <h2 className="text-xl font-semibold text-white">Client Testimonials</h2>
@@ -390,7 +390,7 @@ export default function WriterProfilePage() {
 
       {/* NAICS Expertise & Service Locations */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {writer.naics_expertise.length > 0 && (
+        {Array.isArray(writer.naics_expertise) && writer.naics_expertise.length > 0 && (
           <Card>
             <CardHeader>
               <h2 className="text-xl font-semibold text-white">NAICS Expertise</h2>
@@ -407,7 +407,7 @@ export default function WriterProfilePage() {
           </Card>
         )}
 
-        {writer.service_locations.length > 0 && (
+        {Array.isArray(writer.service_locations) && writer.service_locations.length > 0 && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">

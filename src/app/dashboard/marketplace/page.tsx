@@ -64,8 +64,9 @@ export default function MarketplacePage() {
         getAvailableSpecializations(),
       ]);
 
-      setWriters(writersData);
-      setSpecializations(specializationsData);
+      // Ensure data is always an array
+      setWriters(Array.isArray(writersData) ? writersData : []);
+      setSpecializations(Array.isArray(specializationsData) ? specializationsData : []);
     } catch (err: unknown) {
       // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to load marketplace data');
@@ -81,7 +82,7 @@ export default function MarketplacePage() {
       writer.full_name.toLowerCase().includes(query) ||
       writer.company_name?.toLowerCase().includes(query) ||
       writer.bio?.toLowerCase().includes(query) ||
-      writer.specializations.some((s) => s.toLowerCase().includes(query))
+      (Array.isArray(writer.specializations) && writer.specializations.some((s) => s.toLowerCase().includes(query)))
     );
   });
 
@@ -328,7 +329,7 @@ export default function MarketplacePage() {
                 )}
 
                 {/* Specializations */}
-                {writer.specializations.length > 0 && (
+                {Array.isArray(writer.specializations) && writer.specializations.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {writer.specializations.slice(0, 3).map((spec) => (
                       <Badge key={spec} variant="primary" size="sm">
@@ -353,7 +354,7 @@ export default function MarketplacePage() {
                   <div className="flex items-center gap-2 text-gray-400">
                     <MapPinIcon className="w-4 h-4" />
                     <span className="truncate">
-                      {writer.service_locations.length > 0
+                      {Array.isArray(writer.service_locations) && writer.service_locations.length > 0
                         ? writer.service_locations[0]
                         : 'Remote'}
                     </span>

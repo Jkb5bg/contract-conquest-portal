@@ -38,7 +38,8 @@ export default function ClientBookingsPage() {
 
     try {
       const data = await getMyBookings(100);
-      setBookings(data);
+      // Ensure data is always an array
+      setBookings(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to load bookings');
