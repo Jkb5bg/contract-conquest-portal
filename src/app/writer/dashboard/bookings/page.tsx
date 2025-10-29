@@ -158,7 +158,7 @@ export default function WriterBookingsPage() {
             <p className="text-sm text-gray-500 mt-2">
               {filterStatus === 'all'
                 ? 'You have no bookings yet. Complete your profile to start receiving bookings!'
-                : `No ${filterStatus.replace('_', ' ')} bookings`}
+                : `No ${filterStatus?.replace('_', ' ') || filterStatus} bookings`}
             </p>
           </CardBody>
         </Card>
@@ -173,14 +173,14 @@ export default function WriterBookingsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <Badge variant={getStatusBadge(booking.status)}>
-                          {booking.status.replace('_', ' ')}
+                          {booking.status?.replace('_', ' ') || 'Unknown'}
                         </Badge>
                         <span className="text-sm text-gray-400">
                           Created: {new Date(booking.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       <h3 className="text-xl font-semibold text-white capitalize">
-                        {booking.service_type.replace('_', ' ')}
+                        {booking.service_type?.replace('_', ' ') || 'N/A'}
                       </h3>
                       {booking.client_name && (
                         <p className="text-gray-400 mt-1">Client: {booking.client_name}</p>
@@ -265,7 +265,7 @@ export default function WriterBookingsPage() {
             <div>
               <p className="text-sm text-gray-400 mb-2">Current Status</p>
               <Badge variant={getStatusBadge(selectedBooking.status)}>
-                {selectedBooking.status.replace('_', ' ')}
+                {selectedBooking.status?.replace('_', ' ') || 'Unknown'}
               </Badge>
             </div>
 
@@ -277,10 +277,10 @@ export default function WriterBookingsPage() {
                 value={newStatus}
                 onChange={(e) => setNewStatus(e.target.value as BookingStatus)}
               >
-                <option value={selectedBooking.status}>{selectedBooking.status.replace('_', ' ')}</option>
+                <option value={selectedBooking.status}>{selectedBooking.status?.replace('_', ' ') || 'Unknown'}</option>
                 {getAvailableStatuses(selectedBooking.status).map((status) => (
                   <option key={status} value={status}>
-                    {status.replace('_', ' ')}
+                    {status?.replace('_', ' ') || status}
                   </option>
                 ))}
               </Select>
