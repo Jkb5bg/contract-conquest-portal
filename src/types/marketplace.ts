@@ -161,7 +161,14 @@ export interface Booking {
   updated_at: string;
   notes?: string | null;
   review?: BookingReview | null;
+
+  // ⬇️ add any status timestamps your backend returns
+  accepted_at?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
 }
+
 
 export interface MarketplaceFilters {
   limit?: number;
