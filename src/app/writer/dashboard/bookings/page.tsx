@@ -77,26 +77,42 @@ export default function WriterBookingsPage() {
         notes: statusNotes || null,
       };
 
-      await updateBookingStatus(selectedBooking.booking_id, update);
+      // First, optimistically update the UI immediately
+      const updatedBooking = {
+        ...selectedBooking,
+        status: newStatus,
+        notes: statusNotes || selectedBooking.notes,
+      };
 
-      // Optimistically update the booking in state immediately
+      // Update both bookings and filteredBookings
       setBookings(prevBookings =>
         prevBookings.map(b =>
-          b.booking_id === selectedBooking.booking_id
-            ? { ...b, status: newStatus, notes: statusNotes || b.notes }
-            : b
+          b.booking_id === selectedBooking.booking_id ? updatedBooking : b
         )
       );
 
-      // Close modal immediately so user sees the update
+      setFilteredBookings(prevFiltered =>
+        prevFiltered.map(b =>
+          b.booking_id === selectedBooking.booking_id ? updatedBooking : b
+        )
+      );
+
+      // Close modal immediately
       setShowStatusModal(false);
       setSelectedBooking(null);
 
-      // Reload in background to ensure data is synced
-      loadBookings();
+      // Make API call
+      await updateBookingStatus(selectedBooking.booking_id, update);
+
+      // Force a complete reload after a short delay to ensure sync
+      setTimeout(() => {
+        loadBookings();
+      }, 500);
     } catch (err: unknown) {
       // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to update booking status');
+      // Revert on error
+      loadBookings();
     } finally {
       setIsUpdating(false);
     }

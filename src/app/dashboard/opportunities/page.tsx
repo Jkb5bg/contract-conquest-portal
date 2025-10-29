@@ -32,6 +32,7 @@ import {
   MapPinIcon,
   TrashIcon,
   UsersIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
@@ -47,10 +48,12 @@ export default function ConsistentOpportunitiesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterScore, setFilterScore] = useState<number>(0.5);
+  const [filterScoreMin, setFilterScoreMin] = useState<number>(0.0);
+  const [filterScoreMax, setFilterScoreMax] = useState<number>(1.0);
   const [filterLocation, setFilterLocation] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('score');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [forceReloadKey, setForceReloadKey] = useState<number>(0);
 
   // Mass delete state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -73,7 +76,7 @@ export default function ConsistentOpportunitiesPage() {
   useEffect(() => {
     fetchOpportunities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, sortBy, filterStatus, filterScore]);
+  }, [currentPage, pageSize, sortBy, filterStatus, filterScoreMin, filterScoreMax, forceReloadKey]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -81,7 +84,7 @@ export default function ConsistentOpportunitiesPage() {
       setCurrentPage(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterStatus, filterScore]);
+  }, [filterStatus, filterScoreMin, filterScoreMax]);
 
   const fetchOpportunities = async () => {
     try {
@@ -91,7 +94,8 @@ export default function ConsistentOpportunitiesPage() {
       const params: Record<string, string | number> = {
         limit: pageSize,
         offset: offset,
-        score_min: filterScore,
+        score_min: filterScoreMin,
+        score_max: filterScoreMax,
       };
 
       // Add status filter if not "all"
@@ -108,11 +112,18 @@ export default function ConsistentOpportunitiesPage() {
         params.sort_order = 'desc';
       }
 
+      console.log('Fetching opportunities with params:', params);
+
       const response = await apiClient.get('/opportunities/mine', { params });
 
-      setOpportunities(response.data.opportunities || []);
+      const fetchedOpportunities = response.data.opportunities || [];
+      const totalCount = response.data.total || 0;
+
+      console.log(`Fetched ${fetchedOpportunities.length} opportunities, total: ${totalCount}`);
+
+      setOpportunities(fetchedOpportunities);
       setPagination({
-        total: response.data.total || 0,
+        total: totalCount,
         limit: response.data.limit || pageSize,
         offset: response.data.offset || offset,
       });
@@ -123,6 +134,10 @@ export default function ConsistentOpportunitiesPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForceReload = () => {
+    setForceReloadKey(prev => prev + 1);
   };
 
   const toExternal = (url?: string): string => {
@@ -275,24 +290,45 @@ export default function ConsistentOpportunitiesPage() {
             <div>
               <h1 className="text-2xl font-bold text-white mb-2">Your Opportunities</h1>
               <p className="text-gray-400">
-                Showing {startItem}-{endItem} of {pagination.total} total opportunities
+                {pagination.total > 0 ? (
+                  <>Showing {startItem}-{endItem} of <strong className="text-white">{pagination.total}</strong> total opportunities</>
+                ) : (
+                  <>No opportunities found matching your filters</>
+                )}
               </p>
               {selectedIds.size > 0 && (
                 <p className="text-purple-400 mt-1">
                   {selectedIds.size} selected
                 </p>
               )}
+              {(filterStatus !== 'all' || filterScoreMin > 0 || filterScoreMax < 1) && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Filters active: {filterStatus !== 'all' ? `Status: ${filterStatus}` : ''}
+                  {(filterScoreMin > 0 || filterScoreMax < 1) ? ` Score: ${(filterScoreMin * 100).toFixed(0)}%-${(filterScoreMax * 100).toFixed(0)}%` : ''}
+                </p>
+              )}
             </div>
-            {selectedIds.size > 0 && (
+            <div className="flex gap-2">
               <Button
-                variant="danger"
+                variant="secondary"
                 size="sm"
-                onClick={() => setShowDeleteModal(true)}
-                icon={<TrashIcon className="h-4 w-4" />}
+                onClick={handleForceReload}
+                icon={<ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />}
+                disabled={loading}
               >
-                Delete Selected ({selectedIds.size})
+                {loading ? 'Refreshing...' : 'Refresh'}
               </Button>
-            )}
+              {selectedIds.size > 0 && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => setShowDeleteModal(true)}
+                  icon={<TrashIcon className="h-4 w-4" />}
+                >
+                  Delete ({selectedIds.size})
+                </Button>
+              )}
+            </div>
           </div>
         </CardBody>
       </Card>
@@ -340,18 +376,54 @@ export default function ConsistentOpportunitiesPage() {
               ]}
             />
 
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">
-                Min Score: {(filterScore * 100).toFixed(0)}%
+            <div className="space-y-2">
+              <label className="block text-sm text-gray-400">
+                Score Range: {(filterScoreMin * 100).toFixed(0)}% - {(filterScoreMax * 100).toFixed(0)}%
               </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={filterScore * 100}
-                onChange={(e) => setFilterScore(parseInt(e.target.value) / 100)}
-                className="w-full accent-purple-500"
-              />
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 w-8">Min:</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={filterScoreMin * 100}
+                    onChange={(e) => {
+                      const newMin = parseInt(e.target.value) / 100;
+                      if (newMin <= filterScoreMax) {
+                        setFilterScoreMin(newMin);
+                      }
+                    }}
+                    className="flex-1 accent-purple-500"
+                  />
+                  <span className="text-xs text-white w-10 text-right">{(filterScoreMin * 100).toFixed(0)}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 w-8">Max:</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={filterScoreMax * 100}
+                    onChange={(e) => {
+                      const newMax = parseInt(e.target.value) / 100;
+                      if (newMax >= filterScoreMin) {
+                        setFilterScoreMax(newMax);
+                      }
+                    }}
+                    className="flex-1 accent-purple-500"
+                  />
+                  <span className="text-xs text-white w-10 text-right">{(filterScoreMax * 100).toFixed(0)}%</span>
+                </div>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleForceReload}
+                className="w-full mt-2"
+              >
+                Apply Filters
+              </Button>
             </div>
 
             <Select
@@ -396,7 +468,7 @@ export default function ConsistentOpportunitiesPage() {
       </Card>
 
       {/* Opportunities List */}
-      <div className="space-y-4 stagger-fade-in">
+      <div className="space-y-4 stagger-fade-in" key={forceReloadKey}>
         {filteredOpportunities.length > 0 ? (
           filteredOpportunities.map((opp) => (
             <Card key={opp.id} hoverable>
@@ -578,8 +650,10 @@ export default function ConsistentOpportunitiesPage() {
                   <Button variant="primary" onClick={() => {
                     setSearchQuery('');
                     setFilterStatus('all');
-                    setFilterScore(0.5);
+                    setFilterScoreMin(0.0);
+                    setFilterScoreMax(1.0);
                     setFilterLocation('all');
+                    handleForceReload();
                   }}>
                     Clear Filters
                   </Button>
