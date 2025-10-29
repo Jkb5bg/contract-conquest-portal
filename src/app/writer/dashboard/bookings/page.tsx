@@ -79,11 +79,21 @@ export default function WriterBookingsPage() {
 
       await updateBookingStatus(selectedBooking.booking_id, update);
 
-      // Reload bookings
-      await loadBookings();
+      // Optimistically update the booking in state immediately
+      setBookings(prevBookings =>
+        prevBookings.map(b =>
+          b.booking_id === selectedBooking.booking_id
+            ? { ...b, status: newStatus, notes: statusNotes || b.notes }
+            : b
+        )
+      );
 
+      // Close modal immediately so user sees the update
       setShowStatusModal(false);
       setSelectedBooking(null);
+
+      // Reload in background to ensure data is synced
+      loadBookings();
     } catch (err: unknown) {
       // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to update booking status');
@@ -99,8 +109,18 @@ export default function WriterBookingsPage() {
       in_progress: 'primary',
       completed: 'success',
       cancelled: 'danger',
+      unknown: 'secondary',
     };
-    return variants[status] || 'info';
+    return variants[status?.toLowerCase()] || 'secondary';
+  };
+
+  const getStatusDisplay = (status: string): string => {
+    if (!status) return 'Unknown';
+    // Convert status to readable format
+    return status
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   const getAvailableStatuses = (currentStatus: BookingStatus): BookingStatus[] => {
@@ -221,8 +241,23 @@ export default function WriterBookingsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <Badge variant={getStatusBadge(booking.status)}>
-                          {booking.status?.replace('_', ' ') || 'Unknown'}
+                          {getStatusDisplay(booking.status)}
                         </Badge>
+                        {booking.accepted_at && (
+                          <span className="text-xs text-gray-500">
+                            Accepted: {new Date(booking.accepted_at).toLocaleDateString()}
+                          </span>
+                        )}
+                        {booking.started_at && (
+                          <span className="text-xs text-gray-500">
+                            Started: {new Date(booking.started_at).toLocaleDateString()}
+                          </span>
+                        )}
+                        {booking.completed_at && (
+                          <span className="text-xs text-gray-500">
+                            Completed: {new Date(booking.completed_at).toLocaleDateString()}
+                          </span>
+                        )}
                         <span className="text-sm text-gray-400">
                           Created: {new Date(booking.created_at).toLocaleDateString()}
                         </span>
@@ -387,7 +422,7 @@ export default function WriterBookingsPage() {
             <div>
               <p className="text-sm text-gray-400 mb-2">Current Status</p>
               <Badge variant={getStatusBadge(selectedBooking.status)}>
-                {selectedBooking.status?.replace('_', ' ') || 'Unknown'}
+                {getStatusDisplay(selectedBooking.status)}
               </Badge>
             </div>
 
@@ -400,11 +435,11 @@ export default function WriterBookingsPage() {
                 onChange={(e) => setNewStatus(e.target.value as BookingStatus)}
               >
                 <option value={selectedBooking.status || 'requested'}>
-                  {selectedBooking.status?.replace('_', ' ') || 'Requested (Current)'}
+                  {getStatusDisplay(selectedBooking.status)} (Current)
                 </option>
                 {getAvailableStatuses(selectedBooking.status || 'requested').map((status) => (
                   <option key={status} value={status}>
-                    {status.replace('_', ' ')}
+                    {getStatusDisplay(status)}
                   </option>
                 ))}
               </Select>
