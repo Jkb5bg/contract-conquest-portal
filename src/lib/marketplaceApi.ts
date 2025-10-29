@@ -12,6 +12,8 @@ import {
   Booking,
   TierInfo,
   MyTierInfo,
+  BookingMessage,
+  BookingMessageCreate,
 } from '@/types/marketplace';
 
 // ============================================================================
@@ -114,5 +116,25 @@ export async function submitBookingReview(bookingId: string, review: BookingRevi
  */
 export async function getMyTierInfo(): Promise<MyTierInfo> {
   const response = await apiClient.get('/marketplace/my-tier');
+  return response.data;
+}
+
+// ============================================================================
+// BOOKING MESSAGES (Authenticated clients)
+// ============================================================================
+
+/**
+ * Get messages for a booking
+ */
+export async function getClientBookingMessages(bookingId: string): Promise<BookingMessage[]> {
+  const response = await apiClient.get(`/marketplace/bookings/${bookingId}/messages`);
+  return response.data.messages || response.data;
+}
+
+/**
+ * Send a message for a booking
+ */
+export async function sendClientBookingMessage(message: BookingMessageCreate): Promise<BookingMessage> {
+  const response = await apiClient.post(`/marketplace/bookings/${message.booking_id}/messages`, message);
   return response.data;
 }

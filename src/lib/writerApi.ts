@@ -10,6 +10,8 @@ import {
   ProposalWriterUpdateProfile,
   BookingStatusUpdate,
   Booking,
+  BookingMessage,
+  BookingMessageCreate,
 } from '@/types/marketplace';
 import { PasswordChangeRequest } from '@/types/auth';
 
@@ -140,6 +142,20 @@ export async function getWriterBookings(limit: number = 50): Promise<Booking[]> 
 
 export async function updateBookingStatus(bookingId: string, update: BookingStatusUpdate) {
   const response = await writerApi.post(`/writer-auth/bookings/${bookingId}/status`, update);
+  return response.data;
+}
+
+// ============================================================================
+// WRITER BOOKING MESSAGES
+// ============================================================================
+
+export async function getBookingMessages(bookingId: string): Promise<BookingMessage[]> {
+  const response = await writerApi.get(`/writer-auth/bookings/${bookingId}/messages`);
+  return response.data.messages || response.data;
+}
+
+export async function sendBookingMessage(message: BookingMessageCreate): Promise<BookingMessage> {
+  const response = await writerApi.post(`/writer-auth/bookings/${message.booking_id}/messages`, message);
   return response.data;
 }
 
