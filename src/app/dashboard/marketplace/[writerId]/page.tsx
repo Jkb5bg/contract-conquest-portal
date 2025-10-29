@@ -32,6 +32,20 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
+interface OpportunityContext {
+  id: string;
+  opportunity_id: string;
+  title: string;
+  description: string;
+  agency: string;
+  estimated_value?: string;
+  due_date?: string;
+  naics_code?: string;
+  set_aside?: string;
+  opportunity_url?: string;
+  location?: string;
+}
+
 export default function WriterProfilePage() {
   const params = useParams();
   const router = useRouter();
@@ -43,6 +57,7 @@ export default function WriterProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showBookModal, setShowBookModal] = useState(false);
+  const [opportunityContext, setOpportunityContext] = useState<OpportunityContext | null>(null);
 
   const loadWriter = useCallback(async () => {
     setIsLoading(true);
@@ -60,6 +75,19 @@ export default function WriterProfilePage() {
 
   useEffect(() => {
     loadWriter();
+
+    // Check for opportunity context from sessionStorage
+    const contextStr = sessionStorage.getItem('opportunityContext');
+    if (contextStr) {
+      try {
+        const context = JSON.parse(contextStr) as OpportunityContext;
+        setOpportunityContext(context);
+        // Clear it after reading so it doesn't persist incorrectly
+        sessionStorage.removeItem('opportunityContext');
+      } catch (e) {
+        console.error('Failed to parse opportunity context:', e);
+      }
+    }
   }, [loadWriter]);
 
   const renderStars = (rating: number) => {
@@ -464,8 +492,14 @@ export default function WriterProfilePage() {
           onClose={() => setShowBookModal(false)}
           onSuccess={() => {
             setShowBookModal(false);
+            setOpportunityContext(null);
             alert('Booking request sent successfully!');
           }}
+          opportunityId={opportunityContext?.opportunity_id}
+          opportunityTitle={opportunityContext?.title}
+          opportunityDescription={opportunityContext ?
+            `${opportunityContext.description}\n\nOpportunity Details:\n- Agency: ${opportunityContext.agency}${opportunityContext.estimated_value ? `\n- Value: ${opportunityContext.estimated_value}` : ''}${opportunityContext.due_date ? `\n- Due Date: ${new Date(opportunityContext.due_date).toLocaleDateString()}` : ''}${opportunityContext.naics_code ? `\n- NAICS: ${opportunityContext.naics_code}` : ''}${opportunityContext.set_aside ? `\n- Set Aside: ${opportunityContext.set_aside}` : ''}${opportunityContext.location ? `\n- Location: ${opportunityContext.location}` : ''}${opportunityContext.opportunity_url ? `\n- URL: ${opportunityContext.opportunity_url}` : ''}`
+            : undefined}
         />
       )}
     </div>

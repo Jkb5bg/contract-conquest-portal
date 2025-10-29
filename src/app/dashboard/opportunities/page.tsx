@@ -73,20 +73,42 @@ export default function ConsistentOpportunitiesPage() {
   useEffect(() => {
     fetchOpportunities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, sortBy]);
+  }, [currentPage, pageSize, sortBy, filterStatus, filterScore]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatus, filterScore]);
 
   const fetchOpportunities = async () => {
     try {
       setLoading(true);
       const offset = (currentPage - 1) * pageSize;
 
-      const response = await apiClient.get('/opportunities/mine', {
-        params: {
-          limit: pageSize,
-          offset: offset,
-          score_min: 0,
-        },
-      });
+      const params: Record<string, string | number> = {
+        limit: pageSize,
+        offset: offset,
+        score_min: filterScore,
+      };
+
+      // Add status filter if not "all"
+      if (filterStatus !== 'all') {
+        params.status = filterStatus;
+      }
+
+      // Add sort parameter
+      if (sortBy === 'score') {
+        params.sort_by = 'match_score';
+        params.sort_order = 'desc';
+      } else if (sortBy === 'date') {
+        params.sort_by = 'matched_at';
+        params.sort_order = 'desc';
+      }
+
+      const response = await apiClient.get('/opportunities/mine', { params });
 
       setOpportunities(response.data.opportunities || []);
       setPagination({
@@ -202,21 +224,16 @@ export default function ConsistentOpportunitiesPage() {
     )
   ).sort();
 
-  const filteredOpportunities = opportunities
-    .filter(o => {
-      const matchesSearch = o.opportunity_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           o.agency.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = filterStatus === 'all' || o.status === filterStatus;
-      const matchesScore = o.match_score >= filterScore;
-      const matchesLocation = filterLocation === 'all' ||
-                             o.place_of_performance?.state === filterLocation;
-      return matchesSearch && matchesStatus && matchesScore && matchesLocation;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'score') return b.match_score - a.match_score;
-      if (sortBy === 'date') return new Date(b.matched_at).getTime() - new Date(a.matched_at).getTime();
-      return 0;
-    });
+  // Apply only client-side filters (search and location)
+  // Status, score, and sort are handled server-side
+  const filteredOpportunities = opportunities.filter(o => {
+    const matchesSearch = searchQuery === '' ||
+                         o.opportunity_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         o.agency.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesLocation = filterLocation === 'all' ||
+                           o.place_of_performance?.state === filterLocation;
+    return matchesSearch && matchesLocation;
+  });
 
   const getScoreBadge = (score: number) => {
     if (score >= 0.8) return 'Excellent';
@@ -782,12 +799,19 @@ export default function ConsistentOpportunitiesPage() {
                 onClick={() => {
                   setShowWriterModal(false);
                   setSelectedOpportunity(null);
-                  // Store opportunity context in sessionStorage for marketplace to use
+                  // Store comprehensive opportunity context for marketplace
                   sessionStorage.setItem('opportunityContext', JSON.stringify({
                     id: selectedOpportunity.id,
+                    opportunity_id: selectedOpportunity.opportunity_id,
                     title: selectedOpportunity.opportunity_title,
                     description: selectedOpportunity.description || selectedOpportunity.reasoning,
                     agency: selectedOpportunity.agency,
+                    estimated_value: selectedOpportunity.estimated_value,
+                    due_date: selectedOpportunity.due_date,
+                    naics_code: selectedOpportunity.naics_code,
+                    set_aside: selectedOpportunity.set_aside,
+                    opportunity_url: selectedOpportunity.opportunity_url,
+                    location: getOpportunityLocation(selectedOpportunity),
                   }));
                   router.push('/dashboard/marketplace');
                 }}
