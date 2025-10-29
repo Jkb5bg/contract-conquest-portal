@@ -140,14 +140,14 @@ export default function ClientBookingsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <Badge variant={getStatusBadge(booking.status)}>
-                          {booking.status.replace('_', ' ')}
+                          {booking.status?.replace('_', ' ') || 'Unknown'}
                         </Badge>
                         <span className="text-sm text-gray-400">
                           {new Date(booking.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       <h3 className="text-xl font-semibold text-white capitalize">
-                        {booking.service_type.replace('_', ' ')}
+                        {booking.service_type?.replace('_', ' ') || 'N/A'}
                       </h3>
                       {booking.writer_name && (
                         <p className="text-gray-400 mt-1">
