@@ -11,6 +11,9 @@ interface BookWriterModalProps {
   clientId: string;
   onClose: () => void;
   onSuccess: () => void;
+  opportunityId?: string;
+  opportunityTitle?: string;
+  opportunityDescription?: string;
 }
 
 export default function BookWriterModal({
@@ -19,13 +22,18 @@ export default function BookWriterModal({
   clientId,
   onClose,
   onSuccess,
+  opportunityId,
+  opportunityTitle,
+  opportunityDescription,
 }: BookWriterModalProps) {
   const [formData, setFormData] = useState<ProposalWriterBookingRequest>({
     writer_id: writerId,
     client_id: clientId,
     service_type: 'proposal_writing',
-    project_description: '',
-    opportunity_id: null,
+    project_description: opportunityDescription
+      ? `Proposal writing for opportunity: ${opportunityTitle || 'N/A'}\n\n${opportunityDescription}`
+      : '',
+    opportunity_id: opportunityId || null,
     budget: null,
     deadline: null,
     preferred_contact_method: 'email',

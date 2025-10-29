@@ -14,12 +14,14 @@ import {
 } from '@/components/ui';
 import { getMyBookings, submitBookingReview, getClientBookingMessages, sendClientBookingMessage } from '@/lib/marketplaceApi';
 import { Booking, BookingReview, BookingMessage, BookingMessageCreate } from '@/types/marketplace';
-import { CalendarIcon, StarIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, StarIcon, ChatBubbleLeftRightIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
 export default function ClientBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [error, setError] = useState<string | null>(null);
 
   // Review modal
@@ -37,22 +39,53 @@ export default function ClientBookingsPage() {
 
   useEffect(() => {
     loadBookings();
+
+    // Set up auto-refresh every 30 seconds for booking status updates
+    const refreshInterval = setInterval(() => {
+      loadBookings(false);
+    }, 30000);
+
+    return () => clearInterval(refreshInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadBookings = async () => {
-    setIsLoading(true);
+  const loadBookings = async (showLoading = true) => {
+    if (showLoading) {
+      setIsLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     setError(null);
 
     try {
       const data = await getMyBookings(100);
       // Ensure data is always an array
-      setBookings(Array.isArray(data) ? data : []);
+      const newBookings = Array.isArray(data) ? data : [];
+
+      // Check if any booking status has changed
+      if (bookings.length > 0) {
+        newBookings.forEach(newBooking => {
+          const oldBooking = bookings.find(b => b.booking_id === newBooking.booking_id);
+          if (oldBooking && oldBooking.status !== newBooking.status) {
+            // Show notification for status change
+            console.log(`Booking ${newBooking.booking_id} status changed from ${oldBooking.status} to ${newBooking.status}`);
+          }
+        });
+      }
+
+      setBookings(newBookings);
+      setLastUpdated(new Date());
     } catch (err: unknown) {
       // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to load bookings');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
+  };
+
+  const handleManualRefresh = () => {
+    loadBookings(false);
   };
 
   const openReviewModal = (booking: Booking) => {
@@ -156,10 +189,24 @@ export default function ClientBookingsPage() {
         <div>
           <h1 className="text-3xl font-bold text-white">My Bookings</h1>
           <p className="mt-2 text-gray-400">View and manage your writer bookings</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Last updated: {lastUpdated.toLocaleTimeString()} • Auto-refreshes every 30s
+          </p>
         </div>
-        <Link href="/dashboard/marketplace">
-          <Button variant="primary">Book a Writer</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            leftIcon={<ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />}
+          >
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+          <Link href="/dashboard/marketplace">
+            <Button variant="primary">Book a Writer</Button>
+          </Link>
+        </div>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
