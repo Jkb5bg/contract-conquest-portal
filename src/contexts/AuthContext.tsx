@@ -19,6 +19,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const MAX_TIMEOUT_MS = 2147483647;
 
 /**
+ * Set a cookie with proper error handling and verification
+ */
+function setCookie(name: string, value: string, maxAge: number): boolean {
+  try {
+    // Only use Secure flag in production (HTTPS)
+    const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    const secureFlag = isSecure ? '; Secure' : '';
+
+    // Set the cookie with all necessary attributes
+    const cookieString = `${name}=${value}; path=/; max-age=${maxAge}; SameSite=Lax${secureFlag}`;
+    document.cookie = cookieString;
+
+    // Verify the cookie was set by reading it back
+    const cookies = document.cookie.split(';');
+    const cookieExists = cookies.some(cookie => cookie.trim().startsWith(`${name}=`));
+
+    if (!cookieExists) {
+      console.error(`Failed to set cookie: ${name}`);
+      return false;
+    }
+
+    console.log(`✅ Cookie "${name}" set successfully (secure: ${isSecure})`);
+    return true;
+  } catch (error) {
+    console.error(`Error setting cookie "${name}":`, error);
+    return false;
+  }
+}
+
+/**
+ * Delete a cookie
+ */
+function deleteCookie(name: string): void {
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+  console.log(`🗑️ Cookie "${name}" deleted`);
+}
+
+/**
  * Decode a JWT token to extract claims
  * WARNING: This will decode without verification. Verification happens on the backend.
  */
@@ -121,7 +159,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { access_token } = response.data;
       localStorage.setItem('access_token', access_token);
-      document.cookie = `access_token=${access_token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+      const maxAge = 7 * 24 * 60 * 60; // 7 days
+      setCookie('access_token', access_token, maxAge);
       console.log('Token refreshed successfully');
 
       // Schedule next refresh using ref to avoid circular dependency
@@ -232,7 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const currentToken = localStorage.getItem('access_token');
             if (currentToken) {
               const maxAge = 7 * 24 * 60 * 60; // 7 days
-              document.cookie = `access_token=${currentToken}; path=/; max-age=${maxAge}; SameSite=Lax`;
+              setCookie('access_token', currentToken, maxAge);
             }
 
             // Schedule token refresh if needed
@@ -256,13 +295,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const currentToken = localStorage.getItem('access_token');
               if (currentToken) {
                 const maxAge = 7 * 24 * 60 * 60; // 7 days
-                document.cookie = `access_token=${currentToken}; path=/; max-age=${maxAge}; SameSite=Lax`;
+                setCookie('access_token', currentToken, maxAge);
               }
             } else {
               // No fallback, clear everything
               console.log('No cached user, logging out');
               localStorage.clear();
-              document.cookie = 'access_token=; path=/; max-age=0';
+              deleteCookie('access_token');
               setUser(null);
             }
           }
@@ -299,9 +338,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
 
-      // Set cookie for middleware with SameSite=Lax for better SSR compatibility
+      // Set cookie for middleware with verification
       const maxAge = 7 * 24 * 60 * 60; // 7 days
-      document.cookie = `access_token=${data.access_token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+      const cookieSet = setCookie('access_token', data.access_token, maxAge);
+
+      if (!cookieSet) {
+        console.error('⚠️ Warning: Cookie was not set successfully. Authentication may fail.');
+      }
 
       // Create user object
       const userInfo: User = {
@@ -353,7 +396,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    document.cookie = 'access_token=; path=/; max-age=0';
+    deleteCookie('access_token');
     setUser(null);
     setIsPasswordTemporary(false);
     router.push('/login');

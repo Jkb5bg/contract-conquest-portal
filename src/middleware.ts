@@ -6,8 +6,16 @@ export function middleware(request: NextRequest) {
   const hasToken = !!token;
 
   // Log for debugging authentication issues
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[Middleware] Path: ${pathname}, Has Token: ${hasToken}`);
+  console.log(`[Middleware] Path: ${pathname}, Has Token: ${hasToken}`);
+
+  // Additional debugging for cookie issues
+  if (!hasToken && pathname.startsWith('/dashboard')) {
+    const allCookies = request.cookies.getAll();
+    console.log(`[Middleware] ⚠️ No access_token found. All cookies:`, allCookies.map(c => c.name).join(', '));
+  }
+
+  if (hasToken) {
+    console.log(`[Middleware] ✅ Token found, length: ${token.length}`);
   }
 
   // Route: /login
