@@ -14,6 +14,7 @@ import {
   Select,
   LoadingSpinner,
   EmptyState,
+  Modal,
 } from '@/components/ui';
 import {
   MagnifyingGlassIcon,
@@ -29,7 +30,10 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MapPinIcon,
+  TrashIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
 interface PaginationInfo {
   total: number;
@@ -47,6 +51,15 @@ export default function ConsistentOpportunitiesPage() {
   const [filterLocation, setFilterLocation] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('score');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Mass delete state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Writer booking state
+  const [showWriterModal, setShowWriterModal] = useState(false);
+  const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -81,6 +94,8 @@ export default function ConsistentOpportunitiesPage() {
         limit: response.data.limit || pageSize,
         offset: response.data.offset || offset,
       });
+      // Clear selections when page changes
+      setSelectedIds(new Set());
     } catch (error) {
       console.error('Failed to fetch opportunities:', error);
     } finally {
@@ -93,10 +108,8 @@ export default function ConsistentOpportunitiesPage() {
     return url.startsWith('http') ? url : `https://${url}`;
   };
 
-  const handleStatusChange = async (id: string, newStatus: OpportunityStatus) => {
+  const handleStatusChange = async (id: string, newStatus: OpportunityStatus, opportunity?: Opportunity) => {
     try {
-      // Store original state in case we need to revert
-
       // Optimistically update UI immediately
       setOpportunities(prev =>
         prev.map(o => o.id === id ? { ...o, status: newStatus } : o)
@@ -104,7 +117,6 @@ export default function ConsistentOpportunitiesPage() {
 
       // For "passed" status, also remove from list
       if (newStatus === OpportunityStatus.PASSED) {
-        // Give it a moment to show the UI update, then remove
         setTimeout(() => {
           setOpportunities(prev => prev.filter(o => o.id !== id));
           setPagination(prev => ({ ...prev, total: Math.max(0, prev.total - 1) }));
@@ -114,12 +126,71 @@ export default function ConsistentOpportunitiesPage() {
       // Make API call
       await apiClient.put(`/opportunities/${id}/status`, { status: newStatus });
 
+      // If pursuing and we have opportunity data, prompt to contact writer
+      if (newStatus === OpportunityStatus.PURSUING && opportunity) {
+        setSelectedOpportunity(opportunity);
+        // Show toast/notification suggesting to book a writer
+        setTimeout(() => {
+          if (window.confirm('Would you like to contact a proposal writer for this opportunity?')) {
+            router.push(`/dashboard/marketplace?opportunity_id=${opportunity.id}`);
+          }
+        }, 500);
+      }
+
       console.log(`Opportunity ${id} status changed to ${newStatus}`);
     } catch (error) {
       console.error('Failed to update status:', error);
-      // Revert on error
       fetchOpportunities();
     }
+  };
+
+  const toggleSelectOpportunity = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredOpportunities.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredOpportunities.map(o => o.id)));
+    }
+  };
+
+  const handleMassDelete = async () => {
+    if (selectedIds.size === 0) return;
+
+    setIsDeleting(true);
+    try {
+      // Delete all selected opportunities
+      await Promise.all(
+        Array.from(selectedIds).map(id =>
+          apiClient.delete(`/opportunities/${id}`)
+        )
+      );
+
+      // Refresh the list
+      await fetchOpportunities();
+      setShowDeleteModal(false);
+      setSelectedIds(new Set());
+    } catch (error) {
+      console.error('Failed to delete opportunities:', error);
+      alert('Failed to delete some opportunities. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handlePursueWithWriter = (opportunity: Opportunity) => {
+    setSelectedOpportunity(opportunity);
+    setShowWriterModal(true);
   };
 
   // Extract unique states from opportunities for location filter
@@ -189,7 +260,22 @@ export default function ConsistentOpportunitiesPage() {
               <p className="text-gray-400">
                 Showing {startItem}-{endItem} of {pagination.total} total opportunities
               </p>
+              {selectedIds.size > 0 && (
+                <p className="text-purple-400 mt-1">
+                  {selectedIds.size} selected
+                </p>
+              )}
             </div>
+            {selectedIds.size > 0 && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setShowDeleteModal(true)}
+                icon={<TrashIcon className="h-4 w-4" />}
+              >
+                Delete Selected ({selectedIds.size})
+              </Button>
+            )}
           </div>
         </CardBody>
       </Card>
@@ -197,6 +283,17 @@ export default function ConsistentOpportunitiesPage() {
       {/* Filters */}
       <Card>
         <CardBody>
+          <div className="flex items-center gap-4 mb-4">
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                checked={filteredOpportunities.length > 0 && selectedIds.size === filteredOpportunities.length}
+                onChange={toggleSelectAll}
+                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-2 focus:ring-purple-400"
+              />
+              Select All ({filteredOpportunities.length})
+            </label>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Input
               placeholder="Search opportunities..."
@@ -287,14 +384,52 @@ export default function ConsistentOpportunitiesPage() {
           filteredOpportunities.map((opp) => (
             <Card key={opp.id} hoverable>
               <CardBody>
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex gap-4 items-start mb-4">
+                  {/* Checkbox */}
+                  <div className="mt-1">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(opp.id)}
+                      onChange={() => toggleSelectOpportunity(opp.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-2 focus:ring-purple-400 cursor-pointer"
+                    />
+                  </div>
+
                   <div className="flex-1">
-                    <h3
-                      className="text-lg font-semibold text-white mb-2 hover:text-purple-400 cursor-pointer transition-colors"
-                      onClick={() => router.push(`/dashboard/opportunities/${opp.id}`)}
-                    >
-                      {opp.opportunity_title}
-                    </h3>
+                    <div className="flex justify-between items-start">
+                      <h3
+                        className="text-lg font-semibold text-white mb-2 hover:text-purple-400 cursor-pointer transition-colors"
+                        onClick={() => router.push(`/dashboard/opportunities/${opp.id}`)}
+                      >
+                        {opp.opportunity_title}
+                      </h3>
+                      <div className="flex items-center gap-3">
+                        {/* Status indicator */}
+                        {opp.status === OpportunityStatus.SAVED && (
+                          <Badge variant="warning" className="flex items-center gap-1">
+                            <StarSolid className="h-3 w-3" />
+                            Saved
+                          </Badge>
+                        )}
+                        {opp.status === OpportunityStatus.PURSUING && (
+                          <Badge variant="success" className="flex items-center gap-1">
+                            <RocketLaunchIcon className="h-3 w-3" />
+                            Pursuing
+                          </Badge>
+                        )}
+                        <div className="text-right">
+                          <div className={`px-4 py-2 rounded-full bg-gradient-to-r ${
+                            opp.match_score >= 0.8 ? 'from-green-400 to-emerald-500' :
+                            opp.match_score >= 0.6 ? 'from-yellow-400 to-orange-500' :
+                            'from-blue-400 to-indigo-500'
+                          } text-white font-bold text-lg`}>
+                            {(opp.match_score * 100).toFixed(0)}%
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">{getScoreBadge(opp.match_score)} Match</p>
+                        </div>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-4 text-sm text-gray-400 flex-wrap">
                       <span className="flex items-center">
                         <BuildingOfficeIcon className="h-4 w-4 mr-1" />
@@ -320,29 +455,6 @@ export default function ConsistentOpportunitiesPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className={`px-4 py-2 rounded-full bg-gradient-to-r ${
-                        opp.match_score >= 0.8 ? 'from-green-400 to-emerald-500' :
-                        opp.match_score >= 0.6 ? 'from-yellow-400 to-orange-500' :
-                        'from-blue-400 to-indigo-500'
-                      } text-white font-bold text-lg`}>
-                        {(opp.match_score * 100).toFixed(0)}%
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1">{getScoreBadge(opp.match_score)} Match</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Status Badge */}
-                <div className="mb-4">
-                  <Badge variant={
-                    opp.status === OpportunityStatus.PURSUING ? 'success' :
-                    opp.status === OpportunityStatus.SAVED ? 'warning' :
-                    'info'
-                  }>
-                    {opp.status.charAt(0).toUpperCase() + opp.status.slice(1)}
-                  </Badge>
                 </div>
 
                 {/* AI Reasoning */}
@@ -373,7 +485,7 @@ export default function ConsistentOpportunitiesPage() {
                         size="sm"
                         variant="warning"
                         icon={<StarIcon className="h-4 w-4" />}
-                        onClick={() => handleStatusChange(opp.id, OpportunityStatus.SAVED)}
+                        onClick={() => handleStatusChange(opp.id, OpportunityStatus.SAVED, opp)}
                       >
                         Save
                       </Button>
@@ -383,9 +495,19 @@ export default function ConsistentOpportunitiesPage() {
                         size="sm"
                         variant="success"
                         icon={<RocketLaunchIcon className="h-4 w-4" />}
-                        onClick={() => handleStatusChange(opp.id, OpportunityStatus.PURSUING)}
+                        onClick={() => handleStatusChange(opp.id, OpportunityStatus.PURSUING, opp)}
                       >
                         Pursue
+                      </Button>
+                    )}
+                    {opp.status === OpportunityStatus.PURSUING && (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={<UsersIcon className="h-4 w-4" />}
+                        onClick={() => handlePursueWithWriter(opp)}
+                      >
+                        Find Writer
                       </Button>
                     )}
                     {opp.status !== OpportunityStatus.PASSED && (
@@ -393,7 +515,7 @@ export default function ConsistentOpportunitiesPage() {
                         size="sm"
                         variant="ghost"
                         icon={<XMarkIcon className="h-4 w-4" />}
-                        onClick={() => handleStatusChange(opp.id, OpportunityStatus.PASSED)}
+                        onClick={() => handleStatusChange(opp.id, OpportunityStatus.PASSED, opp)}
                       >
                         Pass
                       </Button>
@@ -579,6 +701,102 @@ export default function ConsistentOpportunitiesPage() {
             </div>
           </CardBody>
         </Card>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <Modal
+          isOpen
+          onClose={() => setShowDeleteModal(false)}
+          title="Delete Opportunities"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-300">
+              Are you sure you want to delete {selectedIds.size} selected {selectedIds.size === 1 ? 'opportunity' : 'opportunities'}? This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3 justify-end pt-4">
+              <Button
+                variant="secondary"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleMassDelete}
+                isLoading={isDeleting}
+                icon={<TrashIcon className="h-4 w-4" />}
+              >
+                Delete {selectedIds.size} {selectedIds.size === 1 ? 'Opportunity' : 'Opportunities'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Writer Booking Modal - Redirect to marketplace with opportunity context */}
+      {showWriterModal && selectedOpportunity && (
+        <Modal
+          isOpen
+          onClose={() => {
+            setShowWriterModal(false);
+            setSelectedOpportunity(null);
+          }}
+          title="Find a Proposal Writer"
+        >
+          <div className="space-y-4">
+            <p className="text-gray-300">
+              You&apos;re pursuing: <strong>{selectedOpportunity.opportunity_title}</strong>
+            </p>
+            <p className="text-gray-400 text-sm">
+              Browse our marketplace to find qualified proposal writers who can help you with this opportunity.
+            </p>
+
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+              <h4 className="text-white font-semibold mb-2">Opportunity Details</h4>
+              <ul className="text-sm text-gray-300 space-y-1">
+                <li><strong>Agency:</strong> {selectedOpportunity.agency}</li>
+                {selectedOpportunity.estimated_value && (
+                  <li><strong>Value:</strong> {selectedOpportunity.estimated_value}</li>
+                )}
+                {selectedOpportunity.due_date && (
+                  <li><strong>Due:</strong> {new Date(selectedOpportunity.due_date).toLocaleDateString()}</li>
+                )}
+              </ul>
+            </div>
+
+            <div className="flex gap-3 justify-end pt-4">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowWriterModal(false);
+                  setSelectedOpportunity(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setShowWriterModal(false);
+                  setSelectedOpportunity(null);
+                  // Store opportunity context in sessionStorage for marketplace to use
+                  sessionStorage.setItem('opportunityContext', JSON.stringify({
+                    id: selectedOpportunity.id,
+                    title: selectedOpportunity.opportunity_title,
+                    description: selectedOpportunity.description || selectedOpportunity.reasoning,
+                    agency: selectedOpportunity.agency,
+                  }));
+                  router.push('/dashboard/marketplace');
+                }}
+              >
+                Browse Writers
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardBody, Input, Select, Button, Alert, Badge } from '@/components/ui';
 import { getWriterProfile, updateWriterProfile } from '@/lib/writerApi';
-import { ProposalWriterUpdateProfile, ProposalWriterPublicProfile } from '@/types/marketplace';
+import { ProposalWriterUpdateProfile } from '@/types/marketplace';
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
 
 export default function WriterProfilePage() {
-  const [profile, setProfile] = useState<ProposalWriterPublicProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,6 @@ export default function WriterProfilePage() {
   const [formData, setFormData] = useState<ProposalWriterUpdateProfile>({});
   const [newSpecialization, setNewSpecialization] = useState('');
   const [newQualification, setNewQualification] = useState('');
-  const [profileImageUrl, setProfileImageUrl] = useState('');
 
   useEffect(() => {
     loadProfile();
@@ -27,7 +26,6 @@ export default function WriterProfilePage() {
     setIsLoading(true);
     try {
       const data = await getWriterProfile();
-      setProfile(data);
 
       // Pre-fill form with existing data
       setFormData({
@@ -49,7 +47,6 @@ export default function WriterProfilePage() {
         service_locations: data.service_locations || [],
         naics_expertise: data.naics_expertise || [],
       });
-      setProfileImageUrl(data.profile_photo_url || '');
     } catch (err: unknown) {
       // @ts-expect-error Accessing response property on unknown error type
       setError(err.response?.data?.detail || 'Failed to load profile');
@@ -158,29 +155,24 @@ export default function WriterProfilePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Profile Photo URL</label>
-              <Input
-                value={formData.profile_photo_url || ''}
-                onChange={(e) => {
-                  handleChange('profile_photo_url', e.target.value);
-                  setProfileImageUrl(e.target.value);
+              <label className="block text-sm font-medium text-gray-300 mb-2">Profile Photo</label>
+              <ProfilePhotoUpload
+                currentPhotoUrl={formData.profile_photo_url}
+                onPhotoUploaded={(url) => {
+                  handleChange('profile_photo_url', url);
                 }}
-                placeholder="https://example.com/your-photo.jpg"
+                userType="writer"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Enter a URL to your profile photo. Recommended size: 400x400px
-              </p>
-              {profileImageUrl && (
-                <div className="mt-3">
-                  <p className="text-sm text-gray-400 mb-2">Preview:</p>
-                  <img
-                    src={profileImageUrl}
-                    alt="Profile preview"
-                    className="w-32 h-32 rounded-full object-cover border-2 border-gray-700"
-                    onError={() => setProfileImageUrl('')}
-                  />
-                </div>
-              )}
+              <div className="mt-4">
+                <p className="text-xs text-gray-400 mb-2">Or enter a URL manually:</p>
+                <Input
+                  value={formData.profile_photo_url || ''}
+                  onChange={(e) => {
+                    handleChange('profile_photo_url', e.target.value);
+                  }}
+                  placeholder="https://example.com/your-photo.jpg"
+                />
+              </div>
             </div>
 
             <div>
