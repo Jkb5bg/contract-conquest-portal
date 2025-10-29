@@ -134,7 +134,8 @@ export async function getWriterBookings(limit: number = 50): Promise<Booking[]> 
   const response = await writerApi.get('/writer-auth/my-bookings', {
     params: { limit },
   });
-  return response.data;
+  // Backend returns {bookings: [], count: number}, extract the bookings array
+  return response.data.bookings || response.data;
 }
 
 export async function updateBookingStatus(bookingId: string, update: BookingStatusUpdate) {

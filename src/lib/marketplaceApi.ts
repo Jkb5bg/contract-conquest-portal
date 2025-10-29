@@ -97,7 +97,8 @@ export async function getMyBookings(limit: number = 50): Promise<Booking[]> {
   const response = await apiClient.get('/marketplace/bookings/my-bookings', {
     params: { limit },
   });
-  return response.data;
+  // Backend returns {bookings: [], count: number}, extract the bookings array
+  return response.data.bookings || response.data;
 }
 
 /**
