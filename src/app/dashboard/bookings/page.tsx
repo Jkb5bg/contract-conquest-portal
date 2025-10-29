@@ -10,10 +10,11 @@ import {
   Alert,
   Modal,
   Button,
+  Input,
 } from '@/components/ui';
-import { getMyBookings, submitBookingReview } from '@/lib/marketplaceApi';
-import { Booking, BookingReview } from '@/types/marketplace';
-import { CalendarIcon, StarIcon } from '@heroicons/react/24/outline';
+import { getMyBookings, submitBookingReview, getClientBookingMessages, sendClientBookingMessage } from '@/lib/marketplaceApi';
+import { Booking, BookingReview, BookingMessage, BookingMessageCreate } from '@/types/marketplace';
+import { CalendarIcon, StarIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 
 export default function ClientBookingsPage() {
@@ -27,6 +28,12 @@ export default function ClientBookingsPage() {
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Messaging
+  const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Record<string, BookingMessage[]>>({});
+  const [newMessage, setNewMessage] = useState<Record<string, string>>({});
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   useEffect(() => {
     loadBookings();
@@ -92,6 +99,47 @@ export default function ClientBookingsPage() {
       cancelled: 'danger',
     };
     return variants[status] || 'info';
+  };
+
+  const toggleMessages = async (bookingId: string) => {
+    if (expandedBookingId === bookingId) {
+      setExpandedBookingId(null);
+    } else {
+      setExpandedBookingId(bookingId);
+      if (!messages[bookingId]) {
+        try {
+          const bookingMessages = await getClientBookingMessages(bookingId);
+          setMessages((prev) => ({ ...prev, [bookingId]: bookingMessages }));
+        } catch (err) {
+          console.error('Failed to load messages:', err);
+        }
+      }
+    }
+  };
+
+  const handleSendMessage = async (bookingId: string) => {
+    const messageText = newMessage[bookingId]?.trim();
+    if (!messageText) return;
+
+    setIsSendingMessage(true);
+    try {
+      const messageData: BookingMessageCreate = {
+        booking_id: bookingId,
+        message_text: messageText,
+      };
+
+      const sentMessage = await sendClientBookingMessage(messageData);
+      setMessages((prev) => ({
+        ...prev,
+        [bookingId]: [...(prev[bookingId] || []), sentMessage],
+      }));
+      setNewMessage((prev) => ({ ...prev, [bookingId]: '' }));
+    } catch (err: unknown) {
+      // @ts-expect-error Accessing response property on unknown error type
+      setError(err.response?.data?.detail || 'Failed to send message');
+    } finally {
+      setIsSendingMessage(false);
+    }
   };
 
   if (isLoading) {
@@ -248,6 +296,80 @@ export default function ClientBookingsPage() {
                       )}
                     </div>
                   )}
+
+                  {/* Messaging Section */}
+                  <div className="border-t border-gray-700 pt-4">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleMessages(booking.booking_id)}
+                      leftIcon={<ChatBubbleLeftRightIcon className="w-4 h-4" />}
+                      className="w-full"
+                    >
+                      {expandedBookingId === booking.booking_id ? 'Hide Messages' : 'Show Messages'}
+                    </Button>
+
+                    {expandedBookingId === booking.booking_id && (
+                      <div className="mt-4 space-y-4">
+                        {/* Messages List */}
+                        <div className="max-h-96 overflow-y-auto space-y-3 bg-gray-900/50 rounded-lg p-4">
+                          {messages[booking.booking_id]?.length === 0 ? (
+                            <p className="text-gray-500 text-sm text-center py-4">
+                              No messages yet. Start the conversation!
+                            </p>
+                          ) : (
+                            messages[booking.booking_id]?.map((msg) => (
+                              <div
+                                key={msg.message_id}
+                                className={`p-3 rounded-lg ${
+                                  msg.sender_type === 'client'
+                                    ? 'bg-primary-900/30 ml-8'
+                                    : 'bg-gray-800 mr-8'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-sm font-medium text-white">
+                                    {msg.sender_name}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(msg.created_at).toLocaleString()}
+                                  </span>
+                                </div>
+                                <p className="text-gray-300 text-sm">{msg.message_text}</p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        {/* Message Input */}
+                        <div className="flex gap-2">
+                          <Input
+                            value={newMessage[booking.booking_id] || ''}
+                            onChange={(e) =>
+                              setNewMessage((prev) => ({
+                                ...prev,
+                                [booking.booking_id]: e.target.value,
+                              }))
+                            }
+                            placeholder="Type your message..."
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendMessage(booking.booking_id);
+                              }
+                            }}
+                          />
+                          <Button
+                            onClick={() => handleSendMessage(booking.booking_id)}
+                            isLoading={isSendingMessage}
+                            disabled={!newMessage[booking.booking_id]?.trim()}
+                          >
+                            Send
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardBody>
             </Card>

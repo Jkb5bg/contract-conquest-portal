@@ -188,3 +188,18 @@ export interface MyTierInfo extends TierInfo {
   can_contact: boolean;
   can_book: boolean;
 }
+
+export interface BookingMessage {
+  message_id: string;
+  booking_id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_type: 'client' | 'writer';
+  message_text: string;
+  created_at: string;
+}
+
+export interface BookingMessageCreate {
+  booking_id: string;
+  message_text: string;
+}
