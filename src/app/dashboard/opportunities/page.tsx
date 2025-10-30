@@ -47,7 +47,8 @@ export default function ConsistentOpportunitiesPage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  // Status filter temporarily disabled until backend adds status column
+  // const [filterStatus, setFilterStatus] = useState<string>('all');
   // Applied filters (used in API calls)
   const [filterScoreMin, setFilterScoreMin] = useState<number>(0.0);
   const [filterScoreMax, setFilterScoreMax] = useState<number>(1.0);
@@ -78,14 +79,22 @@ export default function ConsistentOpportunitiesPage() {
   });
 
   useEffect(() => {
-    fetchOpportunities();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, sortBy, filterStatus, filterScoreMin, filterScoreMax, forceReloadKey]);
+    // Debounce search to avoid too many API calls
+    const timeoutId = setTimeout(() => {
+      fetchOpportunities();
+    }, searchQuery ? 500 : 0); // 500ms debounce for search, immediate for other filters
 
-  // Reset to page 1 when status filter changes
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, sortBy, searchQuery, filterLocation, filterScoreMin, filterScoreMax, forceReloadKey]);
+
+  // Reset to page 1 when filters change (but not on initial mount)
   useEffect(() => {
-    setCurrentPage(1);
-  }, [filterStatus]);
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, filterLocation, filterScoreMin, filterScoreMax]);
 
   const fetchOpportunities = async () => {
     try {
@@ -99,10 +108,20 @@ export default function ConsistentOpportunitiesPage() {
         score_max: filterScoreMax,
       };
 
-      // Add status filter if not "all"
-      if (filterStatus !== 'all') {
-        params.status = filterStatus;
+      // Add search parameter (server-side search across ALL opportunities)
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
       }
+
+      // Add location filter (server-side filter across ALL opportunities)
+      if (filterLocation !== 'all') {
+        params.state = filterLocation;
+      }
+
+      // Status filter temporarily disabled - uncomment when backend adds status column
+      // if (filterStatus !== 'all') {
+      //   params.status = filterStatus;
+      // }
 
       // Add sort parameter
       if (sortBy === 'score') {
@@ -132,6 +151,10 @@ export default function ConsistentOpportunitiesPage() {
       setSelectedIds(new Set());
     } catch (error) {
       console.error('Failed to fetch opportunities:', error);
+      // Show user-friendly error message
+      if (error instanceof Error) {
+        alert(`Failed to load opportunities: ${error.message}\n\nPlease check BACKEND_MIGRATION_NEEDED.md for required database migration.`);
+      }
     } finally {
       setLoading(false);
     }
@@ -151,7 +174,7 @@ export default function ConsistentOpportunitiesPage() {
 
   const handleClearFilters = () => {
     setSearchQuery('');
-    setFilterStatus('all');
+    // setFilterStatus('all'); // Disabled until backend adds status column
     setPendingScoreMin(0.0);
     setPendingScoreMax(1.0);
     setFilterScoreMin(0.0);
@@ -250,7 +273,9 @@ export default function ConsistentOpportunitiesPage() {
     setShowWriterModal(true);
   };
 
-  // Extract unique states from opportunities for location filter
+  // Extract unique states from opportunities for location filter dropdown
+  // Note: This only shows states from the first page of results
+  // Once backend implements location filtering, all unique states will be available
   const uniqueStates = Array.from(
     new Set(
       opportunities
@@ -259,16 +284,9 @@ export default function ConsistentOpportunitiesPage() {
     )
   ).sort();
 
-  // Apply only client-side filters (search and location)
-  // Status, score, and sort are handled server-side
-  const filteredOpportunities = opportunities.filter(o => {
-    const matchesSearch = searchQuery === '' ||
-                         o.opportunity_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         o.agency.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLocation = filterLocation === 'all' ||
-                           o.place_of_performance?.state === filterLocation;
-    return matchesSearch && matchesLocation;
-  });
+  // All filtering is now done server-side
+  // The opportunities array already contains the filtered results
+  const filteredOpportunities = opportunities;
 
   const getScoreBadge = (score: number) => {
     if (score >= 0.8) return 'Excellent';
@@ -321,10 +339,12 @@ export default function ConsistentOpportunitiesPage() {
                   {selectedIds.size} selected
                 </p>
               )}
-              {(filterStatus !== 'all' || filterScoreMin > 0 || filterScoreMax < 1) && (
+              {(searchQuery || filterLocation !== 'all' || filterScoreMin > 0 || filterScoreMax < 1) && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Active filters: {filterStatus !== 'all' ? `Status: ${filterStatus}` : ''}
-                  {(filterScoreMin > 0 || filterScoreMax < 1) ? ` | Score: ${(filterScoreMin * 100).toFixed(0)}%-${(filterScoreMax * 100).toFixed(0)}%` : ''}
+                  Active filters:
+                  {searchQuery && ` Search: "${searchQuery}"`}
+                  {filterLocation !== 'all' && ` | Location: ${filterLocation}`}
+                  {(filterScoreMin > 0 || filterScoreMax < 1) && ` | Score: ${(filterScoreMin * 100).toFixed(0)}%-${(filterScoreMax * 100).toFixed(0)}%`}
                 </p>
               )}
             </div>
@@ -367,15 +387,16 @@ export default function ConsistentOpportunitiesPage() {
               Select All ({filteredOpportunities.length})
             </label>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Input
-              placeholder="Search opportunities..."
+              placeholder="Search all opportunities..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               icon={<MagnifyingGlassIcon className="h-5 w-5" />}
             />
 
-            <Select
+            {/* Status filter temporarily disabled until backend adds status column */}
+            {/* <Select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               options={[
@@ -384,9 +405,8 @@ export default function ConsistentOpportunitiesPage() {
                 { value: OpportunityStatus.SAVED, label: 'Saved' },
                 { value: OpportunityStatus.PURSUING, label: 'Pursuing' },
               ]}
-            />
+            /> */}
 
-            {/* NEW: Location Filter */}
             <Select
               value={filterLocation}
               onChange={(e) => setFilterLocation(e.target.value)}
