@@ -15,6 +15,7 @@ import {
   LoadingSpinner,
   EmptyState,
   Modal,
+  Alert,
 } from '@/components/ui';
 import {
   MagnifyingGlassIcon,
@@ -160,16 +161,14 @@ export default function ConsistentOpportunitiesPage() {
     }
   };
 
-  const handleForceReload = () => {
-    setForceReloadKey(prev => prev + 1);
-  };
-
   const handleApplyFilters = () => {
-    // Apply pending score filters
+    // Apply pending score filters and force reload
     setFilterScoreMin(pendingScoreMin);
     setFilterScoreMax(pendingScoreMax);
-    // Reset to page 1 when applying score filters
+    // Reset to page 1 when applying filters
     setCurrentPage(1);
+    // Force reload to get fresh data
+    setForceReloadKey(prev => prev + 1);
   };
 
   const handleClearFilters = () => {
@@ -206,15 +205,10 @@ export default function ConsistentOpportunitiesPage() {
       // Make API call
       await apiClient.put(`/opportunities/${id}/status`, { status: newStatus });
 
-      // If pursuing and we have opportunity data, prompt to contact writer
+      // If pursuing and we have opportunity data, show writer modal immediately
       if (newStatus === OpportunityStatus.PURSUING && opportunity) {
         setSelectedOpportunity(opportunity);
-        // Show toast/notification suggesting to book a writer
-        setTimeout(() => {
-          if (window.confirm('Would you like to contact a proposal writer for this opportunity?')) {
-            router.push(`/dashboard/marketplace?opportunity_id=${opportunity.id}`);
-          }
-        }, 500);
+        setShowWriterModal(true);
       }
 
       console.log(`Opportunity ${id} status changed to ${newStatus}`);
@@ -348,27 +342,16 @@ export default function ConsistentOpportunitiesPage() {
                 </p>
               )}
             </div>
-            <div className="flex gap-2">
+            {selectedIds.size > 0 && (
               <Button
-                variant="secondary"
+                variant="danger"
                 size="sm"
-                onClick={handleForceReload}
-                icon={<ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />}
-                disabled={loading}
+                onClick={() => setShowDeleteModal(true)}
+                icon={<TrashIcon className="h-4 w-4" />}
               >
-                {loading ? 'Refreshing...' : 'Refresh'}
+                Delete ({selectedIds.size})
               </Button>
-              {selectedIds.size > 0 && (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => setShowDeleteModal(true)}
-                  icon={<TrashIcon className="h-4 w-4" />}
-                >
-                  Delete ({selectedIds.size})
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </CardBody>
       </Card>
@@ -376,104 +359,112 @@ export default function ConsistentOpportunitiesPage() {
       {/* Filters */}
       <Card>
         <CardBody>
-          <div className="flex items-center gap-4 mb-4">
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input
-                type="checkbox"
-                checked={filteredOpportunities.length > 0 && selectedIds.size === filteredOpportunities.length}
-                onChange={toggleSelectAll}
-                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-2 focus:ring-purple-400"
+          <div className="space-y-4">
+            {/* Top Row: Search, Location, Sort */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                placeholder="Search all opportunities..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                icon={<MagnifyingGlassIcon className="h-5 w-5" />}
               />
-              Select All ({filteredOpportunities.length})
-            </label>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Input
-              placeholder="Search all opportunities..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              icon={<MagnifyingGlassIcon className="h-5 w-5" />}
-            />
 
-            {/* Status filter temporarily disabled until backend adds status column */}
-            {/* <Select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              options={[
-                { value: 'all', label: 'All Status' },
-                { value: OpportunityStatus.NEW, label: 'New' },
-                { value: OpportunityStatus.SAVED, label: 'Saved' },
-                { value: OpportunityStatus.PURSUING, label: 'Pursuing' },
-              ]}
-            /> */}
+              <Select
+                value={filterLocation}
+                onChange={(e) => setFilterLocation(e.target.value)}
+                options={[
+                  { value: 'all', label: 'All Locations' },
+                  ...uniqueStates.map(state => ({ value: state, label: state }))
+                ]}
+              />
 
-            <Select
-              value={filterLocation}
-              onChange={(e) => setFilterLocation(e.target.value)}
-              options={[
-                { value: 'all', label: 'All Locations' },
-                ...uniqueStates.map(state => ({ value: state, label: state }))
-              ]}
-            />
-
-            <div className="space-y-2">
-              <label className="block text-sm text-gray-400">
-                Score Range: {(pendingScoreMin * 100).toFixed(0)}% - {(pendingScoreMax * 100).toFixed(0)}%
-              </label>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500 w-8">Min:</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={pendingScoreMin * 100}
-                    onChange={(e) => {
-                      const newMin = parseInt(e.target.value) / 100;
-                      if (newMin <= pendingScoreMax) {
-                        setPendingScoreMin(newMin);
-                      }
-                    }}
-                    className="flex-1 accent-purple-500"
-                  />
-                  <span className="text-xs text-white w-10 text-right">{(pendingScoreMin * 100).toFixed(0)}%</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500 w-8">Max:</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={pendingScoreMax * 100}
-                    onChange={(e) => {
-                      const newMax = parseInt(e.target.value) / 100;
-                      if (newMax >= pendingScoreMin) {
-                        setPendingScoreMax(newMax);
-                      }
-                    }}
-                    className="flex-1 accent-purple-500"
-                  />
-                  <span className="text-xs text-white w-10 text-right">{(pendingScoreMax * 100).toFixed(0)}%</span>
-                </div>
-              </div>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleApplyFilters}
-                className="w-full mt-2"
-              >
-                Apply Score Filter
-              </Button>
+              <Select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                options={[
+                  { value: 'score', label: 'Sort by Score' },
+                  { value: 'date', label: 'Sort by Date' },
+                ]}
+              />
             </div>
 
-            <Select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              options={[
-                { value: 'score', label: 'Sort by Score' },
-                { value: 'date', label: 'Sort by Date' },
-              ]}
-            />
+            {/* Score Range Filter with Apply Button */}
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="flex items-end gap-4">
+                <div className="flex-1 space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Match Score Range: {(pendingScoreMin * 100).toFixed(0)}% - {(pendingScoreMax * 100).toFixed(0)}%
+                  </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-400 w-10">Min:</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={pendingScoreMin * 100}
+                        onChange={(e) => {
+                          const newMin = parseInt(e.target.value) / 100;
+                          if (newMin <= pendingScoreMax) {
+                            setPendingScoreMin(newMin);
+                          }
+                        }}
+                        className="flex-1 accent-purple-500"
+                      />
+                      <span className="text-xs text-white w-12 text-right font-medium">{(pendingScoreMin * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-gray-400 w-10">Max:</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={pendingScoreMax * 100}
+                        onChange={(e) => {
+                          const newMax = parseInt(e.target.value) / 100;
+                          if (newMax >= pendingScoreMin) {
+                            setPendingScoreMax(newMax);
+                          }
+                        }}
+                        className="flex-1 accent-purple-500"
+                      />
+                      <span className="text-xs text-white w-12 text-right font-medium">{(pendingScoreMax * 100).toFixed(0)}%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="primary"
+                    onClick={handleApplyFilters}
+                    icon={<ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />}
+                    disabled={loading}
+                  >
+                    Apply Filters
+                  </Button>
+                  {(searchQuery || filterLocation !== 'all' || pendingScoreMin > 0 || pendingScoreMax < 1) && (
+                    <Button
+                      variant="secondary"
+                      onClick={handleClearFilters}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Select All Checkbox */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={filteredOpportunities.length > 0 && selectedIds.size === filteredOpportunities.length}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-2 focus:ring-purple-400"
+                />
+                Select All ({filteredOpportunities.length})
+              </label>
+            </div>
           </div>
         </CardBody>
       </Card>
@@ -868,28 +859,59 @@ export default function ConsistentOpportunitiesPage() {
             setShowWriterModal(false);
             setSelectedOpportunity(null);
           }}
-          title="Find a Proposal Writer"
+          title="🚀 Find a Proposal Writer"
         >
           <div className="space-y-4">
-            <p className="text-gray-300">
-              You&apos;re pursuing: <strong>{selectedOpportunity.opportunity_title}</strong>
-            </p>
-            <p className="text-gray-400 text-sm">
-              Browse our marketplace to find qualified proposal writers who can help you with this opportunity.
-            </p>
+            <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/30 rounded-lg p-4">
+              <p className="text-white font-medium mb-2">
+                Great! You&apos;re pursuing this opportunity:
+              </p>
+              <p className="text-lg text-white font-semibold">
+                {selectedOpportunity.opportunity_title}
+              </p>
+            </div>
 
-            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
-              <h4 className="text-white font-semibold mb-2">Opportunity Details</h4>
-              <ul className="text-sm text-gray-300 space-y-1">
-                <li><strong>Agency:</strong> {selectedOpportunity.agency}</li>
+            <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <DocumentTextIcon className="h-5 w-5 text-purple-400" />
+                Opportunity Details (Will be shared with writers)
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Agency:</span>
+                  <span className="text-white font-medium">{selectedOpportunity.agency}</span>
+                </div>
                 {selectedOpportunity.estimated_value && (
-                  <li><strong>Value:</strong> {selectedOpportunity.estimated_value}</li>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Value:</span>
+                    <span className="text-white font-medium">{selectedOpportunity.estimated_value}</span>
+                  </div>
                 )}
                 {selectedOpportunity.due_date && (
-                  <li><strong>Due:</strong> {new Date(selectedOpportunity.due_date).toLocaleDateString()}</li>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Due Date:</span>
+                    <span className="text-white font-medium">{new Date(selectedOpportunity.due_date).toLocaleDateString()}</span>
+                  </div>
                 )}
-              </ul>
+                {selectedOpportunity.naics_code && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">NAICS Code:</span>
+                    <span className="text-white font-medium">{selectedOpportunity.naics_code}</span>
+                  </div>
+                )}
+                {getOpportunityLocation(selectedOpportunity) !== 'Location not specified' && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Location:</span>
+                    <span className="text-white font-medium">{getOpportunityLocation(selectedOpportunity)}</span>
+                  </div>
+                )}
+              </div>
             </div>
+
+            <Alert
+              type="info"
+              message="💡 When you contact a writer, all opportunity details (including description, requirements, and links) will be automatically shared with them so they can provide an accurate quote."
+            />
 
             <div className="flex gap-3 justify-end pt-4">
               <Button
@@ -899,7 +921,7 @@ export default function ConsistentOpportunitiesPage() {
                   setSelectedOpportunity(null);
                 }}
               >
-                Cancel
+                Not Now
               </Button>
               <Button
                 variant="primary"
@@ -922,8 +944,9 @@ export default function ConsistentOpportunitiesPage() {
                   }));
                   router.push('/dashboard/marketplace');
                 }}
+                icon={<UsersIcon className="h-4 w-4" />}
               >
-                Browse Writers
+                Find Writers
               </Button>
             </div>
           </div>
