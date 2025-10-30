@@ -47,8 +47,7 @@ export default function ConsistentOpportunitiesPage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  // Status filter temporarily disabled until backend adds status column
-  // const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   // Applied filters (used in API calls)
   const [filterScoreMin, setFilterScoreMin] = useState<number>(0.0);
   const [filterScoreMax, setFilterScoreMax] = useState<number>(1.0);
@@ -118,10 +117,9 @@ export default function ConsistentOpportunitiesPage() {
         params.state = filterLocation;
       }
 
-      // Status filter temporarily disabled - uncomment when backend adds status column
-      // if (filterStatus !== 'all') {
-      //   params.status = filterStatus;
-      // }
+      if (filterStatus !== 'all') {
+        params.status = filterStatus;
+      }
 
       // Add sort parameter
       if (sortBy === 'score') {
@@ -174,7 +172,7 @@ export default function ConsistentOpportunitiesPage() {
 
   const handleClearFilters = () => {
     setSearchQuery('');
-    // setFilterStatus('all'); // Disabled until backend adds status column
+    setFilterStatus('all'); // Disabled until backend adds status column
     setPendingScoreMin(0.0);
     setPendingScoreMax(1.0);
     setFilterScoreMin(0.0);
@@ -395,8 +393,7 @@ export default function ConsistentOpportunitiesPage() {
               icon={<MagnifyingGlassIcon className="h-5 w-5" />}
             />
 
-            {/* Status filter temporarily disabled until backend adds status column */}
-            {/* <Select
+            <Select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               options={[
@@ -405,7 +402,7 @@ export default function ConsistentOpportunitiesPage() {
                 { value: OpportunityStatus.SAVED, label: 'Saved' },
                 { value: OpportunityStatus.PURSUING, label: 'Pursuing' },
               ]}
-            /> */}
+            />
 
             <Select
               value={filterLocation}
