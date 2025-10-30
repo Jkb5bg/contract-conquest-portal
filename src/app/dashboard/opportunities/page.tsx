@@ -48,8 +48,12 @@ export default function ConsistentOpportunitiesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  // Applied filters (used in API calls)
   const [filterScoreMin, setFilterScoreMin] = useState<number>(0.0);
   const [filterScoreMax, setFilterScoreMax] = useState<number>(1.0);
+  // Pending filters (adjusted by user but not applied yet)
+  const [pendingScoreMin, setPendingScoreMin] = useState<number>(0.0);
+  const [pendingScoreMax, setPendingScoreMax] = useState<number>(1.0);
   const [filterLocation, setFilterLocation] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('score');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -78,13 +82,10 @@ export default function ConsistentOpportunitiesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, sortBy, filterStatus, filterScoreMin, filterScoreMax, forceReloadKey]);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when status filter changes
   useEffect(() => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterStatus, filterScoreMin, filterScoreMax]);
+    setCurrentPage(1);
+  }, [filterStatus]);
 
   const fetchOpportunities = async () => {
     try {
@@ -138,6 +139,25 @@ export default function ConsistentOpportunitiesPage() {
 
   const handleForceReload = () => {
     setForceReloadKey(prev => prev + 1);
+  };
+
+  const handleApplyFilters = () => {
+    // Apply pending score filters
+    setFilterScoreMin(pendingScoreMin);
+    setFilterScoreMax(pendingScoreMax);
+    // Reset to page 1 when applying score filters
+    setCurrentPage(1);
+  };
+
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setFilterStatus('all');
+    setPendingScoreMin(0.0);
+    setPendingScoreMax(1.0);
+    setFilterScoreMin(0.0);
+    setFilterScoreMax(1.0);
+    setFilterLocation('all');
+    setCurrentPage(1);
   };
 
   const toExternal = (url?: string): string => {
@@ -303,8 +323,8 @@ export default function ConsistentOpportunitiesPage() {
               )}
               {(filterStatus !== 'all' || filterScoreMin > 0 || filterScoreMax < 1) && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Filters active: {filterStatus !== 'all' ? `Status: ${filterStatus}` : ''}
-                  {(filterScoreMin > 0 || filterScoreMax < 1) ? ` Score: ${(filterScoreMin * 100).toFixed(0)}%-${(filterScoreMax * 100).toFixed(0)}%` : ''}
+                  Active filters: {filterStatus !== 'all' ? `Status: ${filterStatus}` : ''}
+                  {(filterScoreMin > 0 || filterScoreMax < 1) ? ` | Score: ${(filterScoreMin * 100).toFixed(0)}%-${(filterScoreMax * 100).toFixed(0)}%` : ''}
                 </p>
               )}
             </div>
@@ -378,7 +398,7 @@ export default function ConsistentOpportunitiesPage() {
 
             <div className="space-y-2">
               <label className="block text-sm text-gray-400">
-                Score Range: {(filterScoreMin * 100).toFixed(0)}% - {(filterScoreMax * 100).toFixed(0)}%
+                Score Range: {(pendingScoreMin * 100).toFixed(0)}% - {(pendingScoreMax * 100).toFixed(0)}%
               </label>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -387,16 +407,16 @@ export default function ConsistentOpportunitiesPage() {
                     type="range"
                     min="0"
                     max="100"
-                    value={filterScoreMin * 100}
+                    value={pendingScoreMin * 100}
                     onChange={(e) => {
                       const newMin = parseInt(e.target.value) / 100;
-                      if (newMin <= filterScoreMax) {
-                        setFilterScoreMin(newMin);
+                      if (newMin <= pendingScoreMax) {
+                        setPendingScoreMin(newMin);
                       }
                     }}
                     className="flex-1 accent-purple-500"
                   />
-                  <span className="text-xs text-white w-10 text-right">{(filterScoreMin * 100).toFixed(0)}%</span>
+                  <span className="text-xs text-white w-10 text-right">{(pendingScoreMin * 100).toFixed(0)}%</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500 w-8">Max:</span>
@@ -404,25 +424,25 @@ export default function ConsistentOpportunitiesPage() {
                     type="range"
                     min="0"
                     max="100"
-                    value={filterScoreMax * 100}
+                    value={pendingScoreMax * 100}
                     onChange={(e) => {
                       const newMax = parseInt(e.target.value) / 100;
-                      if (newMax >= filterScoreMin) {
-                        setFilterScoreMax(newMax);
+                      if (newMax >= pendingScoreMin) {
+                        setPendingScoreMax(newMax);
                       }
                     }}
                     className="flex-1 accent-purple-500"
                   />
-                  <span className="text-xs text-white w-10 text-right">{(filterScoreMax * 100).toFixed(0)}%</span>
+                  <span className="text-xs text-white w-10 text-right">{(pendingScoreMax * 100).toFixed(0)}%</span>
                 </div>
               </div>
               <Button
-                variant="secondary"
+                variant="primary"
                 size="sm"
-                onClick={handleForceReload}
+                onClick={handleApplyFilters}
                 className="w-full mt-2"
               >
-                Apply Filters
+                Apply Score Filter
               </Button>
             </div>
 
@@ -647,14 +667,7 @@ export default function ConsistentOpportunitiesPage() {
                 title="No opportunities found"
                 description="Try adjusting your filters or check back later for new matches"
                 action={
-                  <Button variant="primary" onClick={() => {
-                    setSearchQuery('');
-                    setFilterStatus('all');
-                    setFilterScoreMin(0.0);
-                    setFilterScoreMax(1.0);
-                    setFilterLocation('all');
-                    handleForceReload();
-                  }}>
+                  <Button variant="primary" onClick={handleClearFilters}>
                     Clear Filters
                   </Button>
                 }
