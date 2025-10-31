@@ -100,7 +100,13 @@ export async function getMyBookings(limit: number = 50): Promise<Booking[]> {
     params: { limit },
   });
   // Backend returns {bookings: [], count: number}, extract the bookings array
-  return response.data.bookings || response.data;
+  const bookings = response.data.bookings || response.data;
+
+  // Map booking_status to status for frontend compatibility
+  return bookings.map((booking: Record<string, unknown>) => ({
+    ...booking,
+    status: booking.status || booking.booking_status,
+  })) as Booking[];
 }
 
 /**

@@ -137,7 +137,7 @@ export default function WriterProfilePage() {
             <h2 className="text-xl font-semibold text-white">Basic Information</h2>
           </CardHeader>
           <CardBody className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
                 <Input
@@ -303,7 +303,7 @@ export default function WriterProfilePage() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Hourly Rate ($)</label>
                 <Input
@@ -336,7 +336,7 @@ export default function WriterProfilePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Availability Status</label>
                 <Select
@@ -375,11 +375,11 @@ export default function WriterProfilePage() {
         </Card>
 
         {/* Submit */}
-        <div className="flex justify-end gap-4">
-          <Button type="button" variant="secondary" onClick={loadProfile}>
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
+          <Button type="button" variant="secondary" onClick={loadProfile} className="w-full sm:w-auto">
             Reset Changes
           </Button>
-          <Button type="submit" variant="primary" isLoading={isSaving}>
+          <Button type="submit" variant="primary" isLoading={isSaving} className="w-full sm:w-auto">
             Save Profile
           </Button>
         </div>
