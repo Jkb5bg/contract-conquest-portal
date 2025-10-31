@@ -267,41 +267,44 @@ export default function ConsistentProfilePage() {
         />
       )}
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Section Navigation - Checkmarks show from SINGLE CALCULATION */}
-        <div className="col-span-3">
+        <div className="lg:col-span-3">
           <Card>
             <CardBody>
-              <nav className="space-y-1">
-                {sections.map((section) => {
-                  const isComplete = sectionComplete[section.id as keyof SectionCompleteness];
-                  const isActive = activeSection === section.id;
+              {/* Mobile: Horizontal scrollable tabs */}
+              <nav className="lg:space-y-1">
+                <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 -mx-2 px-2 lg:mx-0 lg:px-0">
+                  {sections.map((section) => {
+                    const isComplete = sectionComplete[section.id as keyof SectionCompleteness];
+                    const isActive = activeSection === section.id;
 
-                  return (
-                    <button
-                      key={section.id}
-                      onClick={() => setActiveSection(section.id)}
-                      className={`w-full flex items-center px-4 py-3 rounded-lg transition-all ${
-                        isActive
-                          ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
-                          : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                      }`}
-                    >
-                      <section.icon className="h-5 w-5 mr-3" />
-                      <span className="font-medium">{section.label}</span>
-                      {isComplete && (
-                        <CheckCircleIcon className="h-4 w-4 ml-auto text-green-400" />
-                      )}
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={section.id}
+                        onClick={() => setActiveSection(section.id)}
+                        className={`flex-shrink-0 lg:w-full flex items-center px-3 py-2 lg:px-4 lg:py-3 rounded-lg transition-all whitespace-nowrap ${
+                          isActive
+                            ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
+                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                        }`}
+                      >
+                        <section.icon className="h-4 w-4 lg:h-5 lg:w-5 mr-2 lg:mr-3 flex-shrink-0" />
+                        <span className="font-medium text-sm lg:text-base">{section.label}</span>
+                        {isComplete && (
+                          <CheckCircleIcon className="h-3 w-3 lg:h-4 lg:w-4 ml-2 lg:ml-auto text-green-400 flex-shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </nav>
             </CardBody>
           </Card>
         </div>
 
         {/* Main Content */}
-        <div className="col-span-9">
+        <div className="lg:col-span-9">
           <Card>
             <CardHeader>
               <h2 className="text-xl font-semibold text-white">
@@ -323,7 +326,7 @@ export default function ConsistentProfilePage() {
                     value={profile.email}
                     disabled
                   />
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input
                       label="Minimum Contract Value"
                       type="number"
@@ -930,14 +933,15 @@ export default function ConsistentProfilePage() {
               )}
             </CardBody>
             <CardFooter>
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-400">
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+                <p className="text-sm text-gray-400 text-center sm:text-left">
                   Changes are saved when you click Save Changes
                 </p>
                 <Button
                   variant="primary"
                   onClick={handleSave}
                   isLoading={saving}
+                  className="w-full sm:w-auto"
                 >
                   Save Changes
                 </Button>

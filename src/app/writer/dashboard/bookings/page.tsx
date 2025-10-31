@@ -193,12 +193,12 @@ export default function WriterBookingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">My Bookings</h1>
-          <p className="mt-2 text-gray-400">Manage your client bookings</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">My Bookings</h1>
+          <p className="mt-2 text-sm sm:text-base text-gray-400">Manage your client bookings</p>
         </div>
-        <Button variant="secondary" onClick={loadBookings} leftIcon={<CalendarIcon className="w-5 h-5" />}>
+        <Button variant="secondary" onClick={loadBookings} leftIcon={<CalendarIcon className="w-5 h-5" />} className="w-full sm:w-auto">
           Refresh
         </Button>
       </div>
@@ -245,9 +245,9 @@ export default function WriterBookingsPage() {
               <CardBody>
                 <div className="space-y-4">
                   {/* Header */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                    <div className="flex-1 w-full">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                         <Badge variant={getStatusBadge(booking.status)}>
                           {getStatusDisplay(booking.status)}
                         </Badge>
@@ -266,15 +266,15 @@ export default function WriterBookingsPage() {
                             Completed: {new Date(booking.completed_at).toLocaleDateString()}
                           </span>
                         )}
-                        <span className="text-sm text-gray-400">
-                          Created: {new Date(booking.created_at).toLocaleDateString()}
-                        </span>
                       </div>
-                      <h3 className="text-xl font-semibold text-white capitalize">
+                      <div className="text-xs sm:text-sm text-gray-400 mb-2">
+                        Created: {new Date(booking.created_at).toLocaleDateString()}
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-semibold text-white capitalize">
                         {booking.service_type?.replace('_', ' ') || 'N/A'}
                       </h3>
                       {booking.client_name && (
-                        <p className="text-gray-400 mt-1">Client: {booking.client_name}</p>
+                        <p className="text-sm sm:text-base text-gray-400 mt-1">Client: {booking.client_name}</p>
                       )}
                     </div>
 
@@ -283,6 +283,7 @@ export default function WriterBookingsPage() {
                         variant="primary"
                         size="sm"
                         onClick={() => openStatusModal(booking)}
+                        className="w-full sm:w-auto"
                       >
                         Update Status
                       </Button>
@@ -296,23 +297,23 @@ export default function WriterBookingsPage() {
                   </div>
 
                   {/* Details Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
                     {booking.budget && (
-                      <div>
+                      <div className="flex items-center justify-between sm:block">
                         <span className="text-gray-400">Budget:</span>
                         <span className="text-white ml-2 font-medium">${booking.budget.toLocaleString()}</span>
                       </div>
                     )}
                     {booking.deadline && (
-                      <div>
+                      <div className="flex items-center justify-between sm:block">
                         <span className="text-gray-400">Deadline:</span>
                         <span className="text-white ml-2">{new Date(booking.deadline).toLocaleDateString()}</span>
                       </div>
                     )}
                     {booking.opportunity_id && (
-                      <div>
+                      <div className="flex flex-col sm:block">
                         <span className="text-gray-400">Opportunity ID:</span>
-                        <span className="text-white ml-2 font-mono text-xs">{booking.opportunity_id}</span>
+                        <span className="text-white sm:ml-2 font-mono text-xs break-all">{booking.opportunity_id}</span>
                       </div>
                     )}
                   </div>
