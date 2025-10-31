@@ -517,72 +517,72 @@ export default function ConsistentOpportunitiesPage() {
           filteredOpportunities.map((opp) => (
             <Card key={opp.id} hoverable>
               <CardBody>
-                <div className="flex gap-4 items-start mb-4">
+                <div className="flex gap-3 sm:gap-4 items-start mb-4">
                   {/* Checkbox */}
-                  <div className="mt-1">
+                  <div className="mt-1 flex-shrink-0">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(opp.id)}
                       onChange={() => toggleSelectOpportunity(opp.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-2 focus:ring-purple-400 cursor-pointer"
+                      className="w-4 h-4 sm:w-5 sm:h-5 rounded border-gray-600 bg-gray-700 text-purple-500 focus:ring-2 focus:ring-purple-400 cursor-pointer"
                     />
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4 mb-3">
                       <h3
-                        className="text-lg font-semibold text-white mb-2 hover:text-purple-400 cursor-pointer transition-colors"
+                        className="text-base sm:text-lg font-semibold text-white hover:text-purple-400 cursor-pointer transition-colors break-words"
                         onClick={() => router.push(`/dashboard/opportunities/${opp.id}`)}
                       >
                         {opp.opportunity_title}
                       </h3>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                         {/* Status indicator */}
                         {opp.status === OpportunityStatus.SAVED && (
-                          <Badge variant="warning" className="flex items-center gap-1">
+                          <Badge variant="warning" className="flex items-center gap-1 text-xs">
                             <StarSolid className="h-3 w-3" />
                             Saved
                           </Badge>
                         )}
                         {opp.status === OpportunityStatus.PURSUING && (
-                          <Badge variant="success" className="flex items-center gap-1">
+                          <Badge variant="success" className="flex items-center gap-1 text-xs">
                             <RocketLaunchIcon className="h-3 w-3" />
                             Pursuing
                           </Badge>
                         )}
                         <div className="text-right">
-                          <div className={`px-4 py-2 rounded-full bg-gradient-to-r ${
+                          <div className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r ${
                             opp.match_score >= 0.8 ? 'from-green-400 to-emerald-500' :
                             opp.match_score >= 0.6 ? 'from-yellow-400 to-orange-500' :
                             'from-blue-400 to-indigo-500'
-                          } text-white font-bold text-lg`}>
+                          } text-white font-bold text-base sm:text-lg`}>
                             {(opp.match_score * 100).toFixed(0)}%
                           </div>
-                          <p className="text-xs text-gray-400 mt-1">{getScoreBadge(opp.match_score)} Match</p>
+                          <p className="text-xs text-gray-400 mt-1 hidden sm:block">{getScoreBadge(opp.match_score)} Match</p>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-400 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-400">
                       <span className="flex items-center">
-                        <BuildingOfficeIcon className="h-4 w-4 mr-1" />
-                        {opp.agency}
+                        <BuildingOfficeIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
+                        <span className="truncate">{opp.agency}</span>
                       </span>
                       {getOpportunityLocation(opp) !== 'Location not specified' && (
                         <span className="flex items-center">
-                          <MapPinIcon className="h-4 w-4 mr-1" />
+                          <MapPinIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
                           {getOpportunityLocation(opp)}
                         </span>
                       )}
                       {opp.due_date && (
                         <span className="flex items-center">
-                          <ClockIcon className="h-4 w-4 mr-1" />
+                          <ClockIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
                           {new Date(opp.due_date).toLocaleDateString()}
                         </span>
                       )}
                       {opp.estimated_value && (
                         <span className="flex items-center">
-                          <CurrencyDollarIcon className="h-4 w-4 mr-1" />
+                          <CurrencyDollarIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
                           {opp.estimated_value}
                         </span>
                       )}
@@ -611,14 +611,15 @@ export default function ConsistentOpportunitiesPage() {
               </CardBody>
 
               <CardFooter>
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 w-full">
+                  <div className="flex flex-wrap gap-2">
                     {opp.status !== OpportunityStatus.SAVED && (
                       <Button
                         size="sm"
                         variant="warning"
                         icon={<StarIcon className="h-4 w-4" />}
                         onClick={() => handleStatusChange(opp.id, OpportunityStatus.SAVED, opp)}
+                        className="flex-1 sm:flex-none"
                       >
                         Save
                       </Button>
@@ -629,6 +630,7 @@ export default function ConsistentOpportunitiesPage() {
                         variant="success"
                         icon={<RocketLaunchIcon className="h-4 w-4" />}
                         onClick={() => handleStatusChange(opp.id, OpportunityStatus.PURSUING, opp)}
+                        className="flex-1 sm:flex-none"
                       >
                         Pursue
                       </Button>
@@ -639,6 +641,7 @@ export default function ConsistentOpportunitiesPage() {
                         variant="primary"
                         icon={<UsersIcon className="h-4 w-4" />}
                         onClick={() => handlePursueWithWriter(opp)}
+                        className="flex-1 sm:flex-none"
                       >
                         Find Writer
                       </Button>
@@ -649,31 +652,33 @@ export default function ConsistentOpportunitiesPage() {
                         variant="ghost"
                         icon={<XMarkIcon className="h-4 w-4" />}
                         onClick={() => handleStatusChange(opp.id, OpportunityStatus.PASSED, opp)}
+                        className="flex-1 sm:flex-none"
                       >
                         Pass
                       </Button>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                     {opp.opportunity_url ? (
                       <a
                         href={toExternal(opp.opportunity_url)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
+                        className="flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors text-sm"
                       >
                         <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-2" />
                         See Opportunity
                       </a>
                     ) : (
-                      <span className="text-xs text-gray-500">Link unavailable</span>
+                      <span className="text-xs text-gray-500 text-center sm:text-left">Link unavailable</span>
                     )}
 
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => router.push(`/dashboard/opportunities/${opp.id}`)}
+                      className="w-full sm:w-auto"
                     >
                       View Details →
                     </Button>
