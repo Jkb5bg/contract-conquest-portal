@@ -86,7 +86,7 @@ export default function ConsistentOpportunitiesPage() {
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, sortBy, searchQuery, filterLocation, filterScoreMin, filterScoreMax, forceReloadKey]);
+  }, [currentPage, pageSize, sortBy, searchQuery, filterLocation, filterStatus, filterScoreMin, filterScoreMax, forceReloadKey]);
 
   // Reset to page 1 when filters change (but not on initial mount)
   useEffect(() => {
@@ -94,7 +94,7 @@ export default function ConsistentOpportunitiesPage() {
       setCurrentPage(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, filterLocation, filterScoreMin, filterScoreMax]);
+  }, [searchQuery, filterLocation, filterStatus, filterScoreMin, filterScoreMax]);
 
   const fetchOpportunities = async () => {
     try {
@@ -118,9 +118,10 @@ export default function ConsistentOpportunitiesPage() {
         params.state = filterLocation;
       }
 
-      if (filterStatus !== 'all') {
-        params.status = filterStatus;
-      }
+      // Status filter temporarily disabled - uncomment when backend adds status column
+      // if (filterStatus !== 'all') {
+      //   params.status = filterStatus;
+      // }
 
       // Add sort parameter
       if (sortBy === 'score') {
@@ -171,7 +172,7 @@ export default function ConsistentOpportunitiesPage() {
 
   const handleClearFilters = () => {
     setSearchQuery('');
-    setFilterStatus('all'); // Disabled until backend adds status column
+    // setFilterStatus('all'); // Disabled until backend adds status column
     setPendingScoreMin(0.0);
     setPendingScoreMax(1.0);
     setFilterScoreMin(0.0);
@@ -331,10 +332,11 @@ export default function ConsistentOpportunitiesPage() {
                   {selectedIds.size} selected
                 </p>
               )}
-              {(searchQuery || filterLocation !== 'all' || filterScoreMin > 0 || filterScoreMax < 1) && (
+              {(searchQuery || filterStatus !== 'all' || filterLocation !== 'all' || filterScoreMin > 0 || filterScoreMax < 1) && (
                 <p className="text-xs text-gray-500 mt-1">
                   Active filters:
                   {searchQuery && ` Search: "${searchQuery}"`}
+                  {filterStatus !== 'all' && ` | Status: ${filterStatus}`}
                   {filterLocation !== 'all' && ` | Location: ${filterLocation}`}
                   {(filterScoreMin > 0 || filterScoreMax < 1) && ` | Score: ${(filterScoreMin * 100).toFixed(0)}%-${(filterScoreMax * 100).toFixed(0)}%`}
                 </p>
@@ -358,13 +360,26 @@ export default function ConsistentOpportunitiesPage() {
       <Card>
         <CardBody>
           <div className="space-y-4">
-            {/* Top Row: Search, Location, Sort */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Top Row: Search, Status, Location, Sort */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Input
                 placeholder="Search all opportunities..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 icon={<MagnifyingGlassIcon className="h-5 w-5" />}
+              />
+
+              <Select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: OpportunityStatus.NEW, label: '🆕 New' },
+                  { value: OpportunityStatus.SAVED, label: '⭐ Saved' },
+                  { value: OpportunityStatus.PURSUING, label: '🚀 Pursuing' },
+                  { value: OpportunityStatus.APPLIED, label: '✓ Applied' },
+                  { value: OpportunityStatus.PASSED, label: '✗ Passed' },
+                ]}
               />
 
               <Select
@@ -439,7 +454,7 @@ export default function ConsistentOpportunitiesPage() {
                   >
                     Apply Filters
                   </Button>
-                  {(searchQuery || filterLocation !== 'all' || pendingScoreMin > 0 || pendingScoreMax < 1) && (
+                  {(searchQuery || filterStatus !== 'all' || filterLocation !== 'all' || pendingScoreMin > 0 || pendingScoreMax < 1) && (
                     <Button
                       variant="secondary"
                       onClick={handleClearFilters}
