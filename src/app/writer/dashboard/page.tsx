@@ -239,14 +239,14 @@ export default function WriterDashboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant={getBookingStatusBadge(booking.status)}>
-                          {booking.status.replace('_', ' ')}
+                          {booking.status?.replace('_', ' ') || 'Unknown'}
                         </Badge>
                         <span className="text-sm text-gray-400">
                           {new Date(booking.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       <h3 className="text-white font-medium mb-1">
-                        {booking.service_type.replace('_', ' ')}
+                        {booking.service_type?.replace('_', ' ') || 'Service Request'}
                       </h3>
                       <p className="text-sm text-gray-400 line-clamp-2">
                         {booking.project_description}
