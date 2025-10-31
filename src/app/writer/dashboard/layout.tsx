@@ -58,7 +58,7 @@ export default function WriterDashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950/50 to-gray-950">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -69,7 +69,7 @@ export default function WriterDashboardLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-800/50 backdrop-blur-xl border-r border-gray-700 transform transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900/90 backdrop-blur-xl border-r border-gray-700 transform transition-transform duration-200 lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -140,7 +140,7 @@ export default function WriterDashboardLayout({
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Mobile header */}
-        <header className="lg:hidden flex items-center justify-between h-16 px-4 bg-gray-800/50 backdrop-blur-xl border-b border-gray-700">
+        <header className="lg:hidden flex items-center justify-between h-16 px-4 bg-gray-900/90 backdrop-blur-xl border-b border-gray-700">
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-gray-400 hover:text-white"

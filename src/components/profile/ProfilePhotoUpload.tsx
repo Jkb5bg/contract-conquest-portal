@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Button, Alert } from '@/components/ui';
 import { PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { apiClient } from '@/lib/api';
+import writerApi from '@/lib/writerApi';
 
 interface ProfilePhotoUploadProps {
   currentPhotoUrl?: string | null;
@@ -54,8 +55,11 @@ export default function ProfilePhotoUpload({
       formData.append('file', file);
       formData.append('user_type', userType);
 
-      // Upload to backend
-      const response = await apiClient.post('/upload/profile-photo', formData, {
+      // Upload to backend - use appropriate API client based on user type
+      const client = userType === 'writer' ? writerApi : apiClient;
+      const endpoint = userType === 'writer' ? '/writer-auth/upload/profile-photo' : '/upload/profile-photo';
+
+      const response = await client.post(endpoint, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
