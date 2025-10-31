@@ -1,4 +1,5 @@
 'use client';
+import {useState} from 'react';
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +12,8 @@ import {
   Cog6ToothIcon,
   ShoppingBagIcon,
   CalendarIcon,
+  Bars3Icon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import Image from "next/image";
 
@@ -29,6 +32,7 @@ const PAGE_TITLES: Record<string, string> = {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isLoading, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
 
@@ -73,8 +77,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '4s' }} />
       </div>
 
-      {/* Sidebar - FIXED AND STATIC */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-black/30 backdrop-blur-xl border-r border-white/10 z-50">
+      {/* Mobile menu overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Responsive: Slide-out on mobile, fixed on desktop */}
+      <div className={`
+        fixed inset-y-0 left-0 w-64 bg-black/30 backdrop-blur-xl border-r border-white/10 z-50
+        transform transition-transform duration-300 ease-in-out
+        lg:translate-x-0
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="px-6 py-6 border-b border-white/10">
@@ -97,10 +114,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={`
                     group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all
-                    ${isActive 
-                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-500/50' 
+                    ${isActive
+                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-500/50'
                       : 'text-gray-400 hover:bg-white/5 hover:text-white'
                     }
                   `}
@@ -144,27 +162,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="pl-64">
-        {/* Top Bar - CHANGES BASED ON PAGE */}
+      {/* Main Content - Responsive padding */}
+      <div className="lg:pl-64">
+        {/* Top Bar - CHANGES BASED ON PAGE - Now with mobile menu button */}
         <div className="sticky top-0 z-40 bg-black/20 backdrop-blur-xl border-b border-white/10">
-          <div className="px-8 py-4">
-            <h1 className="text-2xl font-semibold text-white">
-              {currentPageTitle}
-            </h1>
-            <p className="text-sm text-gray-400 mt-1">
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </p>
+          <div className="px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                {mobileMenuOpen ? (
+                  <XMarkIcon className="h-6 w-6" />
+                ) : (
+                  <Bars3Icon className="h-6 w-6" />
+                )}
+              </button>
+
+              {/* Page title */}
+              <h1 className="text-xl sm:text-2xl font-bold text-white">{currentPageTitle}</h1>
+
+              {/* Spacer for mobile */}
+              <div className="w-10 lg:hidden" />
+            </div>
           </div>
         </div>
 
         {/* Page Content - THIS IS THE ONLY PART THAT CHANGES */}
-        <main className="p-8 min-h-[calc(100vh-73px)]">
+        <main className="p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-73px)]">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
