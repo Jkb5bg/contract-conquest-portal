@@ -710,16 +710,16 @@ export default function ConsistentOpportunitiesPage() {
       {pagination.total > 0 && (
         <Card>
           <CardBody>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
               {/* Left: Info Text */}
-              <div className="text-sm text-gray-400">
+              <div className="text-xs sm:text-sm text-gray-400 text-center lg:text-left">
                 Page <span className="text-white font-semibold">{currentPage}</span> of{' '}
                 <span className="text-white font-semibold">{totalPages}</span>
                 {' '}({pagination.total} total)
               </div>
 
               {/* Center: Page Numbers */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 lg:pb-0">
                 <Button
                   size="sm"
                   variant="secondary"
@@ -814,9 +814,9 @@ export default function ConsistentOpportunitiesPage() {
                 </Button>
               </div>
 
-              {/* Right: Go to Page Input */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-400">Go to:</label>
+              {/* Right: Go to Page Input - Hidden on mobile */}
+              <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
+                <label className="text-sm text-gray-400 whitespace-nowrap">Go to:</label>
                 <input
                   type="number"
                   min="1"
@@ -828,7 +828,7 @@ export default function ConsistentOpportunitiesPage() {
                       goToPage(page);
                     }
                   }}
-                  className="w-12 px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-16 px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                 />
               </div>
             </div>
