@@ -27,6 +27,7 @@ export default function EnhancedDashboard() {
   const [recentOpportunities, setRecentOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [profileCompleteness, setProfileCompleteness] = useState(0);
+  const [userTier, setUserTier] = useState<'starter' | 'pro'>('starter');
   const router = useRouter();
 
   useEffect(() => {
@@ -36,7 +37,14 @@ export default function EnhancedDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const oppsRes = await apiClient.get('/opportunities/mine?limit=5&score_min=0.7');
+      // Fetch user tier first to determine appropriate score threshold
+      const profileRes = await apiClient.get('/profile/me');
+      const tier = profileRes.data.subscription_tier || 'starter';
+      setUserTier(tier);
+
+      // Use tier-appropriate score threshold (starter: 0.75, pro: 0.7 for high-quality)
+      const scoreMin = tier === 'pro' ? 0.7 : 0.75;
+      const oppsRes = await apiClient.get(`/opportunities/mine?limit=5&score_min=${scoreMin}`);
       setRecentOpportunities(oppsRes.data.opportunities || []);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -62,6 +70,7 @@ export default function EnhancedDashboard() {
       };
 
       setProfileCompleteness(computeProfileCompleteness(normalizedData));
+      setUserTier(data.subscription_tier || 'starter');
     } catch (e) {
       console.error('Failed to fetch profile completeness:', e);
     }
@@ -83,6 +92,31 @@ export default function EnhancedDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Tier Info Banner */}
+      <Card className="bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-indigo-500/10 border-purple-500/20">
+        <CardBody>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Badge variant={userTier === 'pro' ? 'primary' : 'info'} className="text-sm">
+                {userTier === 'pro' ? '💎 Pro Plan' : '🚀 Starter Plan'}
+              </Badge>
+              <div className="text-sm text-gray-300">
+                <span className="font-medium text-white">{userTier === 'pro' ? '5' : '3'}</span> NAICS codes •
+                <span className="font-medium text-white ml-1">{userTier === 'pro' ? '50%+' : '75%+'}</span> match scores •
+                <span className="font-medium text-white ml-1">Unlimited</span> writer contacts
+              </div>
+            </div>
+            {userTier === 'starter' && (
+              <Link href="/dashboard/profile">
+                <Button variant="primary" size="sm">
+                  Upgrade to Pro
+                </Button>
+              </Link>
+            )}
+          </div>
+        </CardBody>
+      </Card>
+
       {/* Top Opportunities */}
       <Card>
         <CardHeader>

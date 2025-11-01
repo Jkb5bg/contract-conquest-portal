@@ -60,6 +60,9 @@ export default function ConsistentOpportunitiesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [forceReloadKey, setForceReloadKey] = useState<number>(0);
 
+  // User tier info
+  const [userTier, setUserTier] = useState<'starter' | 'pro'>('starter');
+
   // Mass delete state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -79,6 +82,10 @@ export default function ConsistentOpportunitiesPage() {
   });
 
   useEffect(() => {
+    fetchUserTier();
+  }, []);
+
+  useEffect(() => {
     // Debounce search to avoid too many API calls
     const timeoutId = setTimeout(() => {
       fetchOpportunities();
@@ -87,6 +94,17 @@ export default function ConsistentOpportunitiesPage() {
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, sortBy, searchQuery, filterLocation, filterStatus, filterScoreMin, filterScoreMax, forceReloadKey]);
+
+  const fetchUserTier = async () => {
+    try {
+      const response = await apiClient.get('/profile/me');
+      setUserTier(response.data.subscription_tier || 'starter');
+    } catch (error) {
+      console.error('Failed to fetch user tier:', error);
+      // Default to starter on error
+      setUserTier('starter');
+    }
+  };
 
   // Reset to page 1 when filters change (but not on initial mount)
   useEffect(() => {
@@ -403,11 +421,25 @@ export default function ConsistentOpportunitiesPage() {
 
             {/* Score Range Filter with Apply Button */}
             <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              {/* Tier-based score info */}
+              {userTier === 'starter' && pendingScoreMin < 0.75 && (
+                <div className="mb-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <p className="text-sm text-blue-300">
+                    ℹ️ <strong>Starter Plan:</strong> Opportunities are filtered to show matches with 75% or higher scores. Upgrade to Pro for access to matches starting at 50%.
+                  </p>
+                </div>
+              )}
+
               <div className="flex items-end gap-4">
                 <div className="flex-1 space-y-2">
-                  <label className="block text-sm font-medium text-gray-300">
-                    Match Score Range: {(pendingScoreMin * 100).toFixed(0)}% - {(pendingScoreMax * 100).toFixed(0)}%
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-300">
+                      Match Score Range: {(pendingScoreMin * 100).toFixed(0)}% - {(pendingScoreMax * 100).toFixed(0)}%
+                    </label>
+                    <Badge variant={userTier === 'pro' ? 'primary' : 'info'} className="text-xs">
+                      {userTier === 'pro' ? 'Pro' : 'Starter'} (Min: {userTier === 'pro' ? '50%' : '75%'})
+                    </Badge>
+                  </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-gray-400 w-10">Min:</span>

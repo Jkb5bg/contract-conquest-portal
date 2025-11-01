@@ -1,3 +1,5 @@
+export type SubscriptionTier = 'starter' | 'pro';
+
 export interface ClientProfile {
   client_id: string;
   company_name: string;
@@ -15,6 +17,7 @@ export interface ClientProfile {
   geographic_preferences: string[];
   set_aside_eligibilities: string[];
   active: boolean;
+  subscription_tier?: SubscriptionTier;
 }
 
 export interface ProfileCompleteness {

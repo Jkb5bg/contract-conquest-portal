@@ -241,12 +241,30 @@ export default function ConsistentProfilePage() {
       {/* Header */}
       <Card className="bg-gradient-to-r from-purple-500/20 via-blue-500/20 to-indigo-500/20">
         <CardBody>
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-white mb-2">Your Profile</h1>
-              <p className="text-gray-300">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold text-white">Your Profile</h1>
+                <Badge variant={profile.subscription_tier === 'pro' ? 'primary' : 'info'}>
+                  {profile.subscription_tier === 'pro' ? '💎 Pro Plan' : '🚀 Starter Plan'}
+                </Badge>
+              </div>
+              <p className="text-gray-300 mb-3">
                 Keep your profile up to date for better opportunity matches
               </p>
+
+              {/* Tier Benefits Summary */}
+              <div className="flex flex-wrap gap-2 text-xs">
+                <div className="px-3 py-1 bg-white/10 rounded-full text-gray-300">
+                  📊 NAICS: {profile.subscription_tier === 'pro' ? '5' : '3'} codes
+                </div>
+                <div className="px-3 py-1 bg-white/10 rounded-full text-gray-300">
+                  🎯 Min Score: {profile.subscription_tier === 'pro' ? '50%' : '75%'}
+                </div>
+                <div className="px-3 py-1 bg-white/10 rounded-full text-gray-300">
+                  💬 Writer Contacts: Unlimited
+                </div>
+              </div>
             </div>
             <div className="text-right">
               <div className="text-4xl font-bold text-white mb-1">{completeness}%</div>
@@ -449,54 +467,79 @@ export default function ConsistentProfilePage() {
                     </div>
                   </div>
 
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Primary NAICS Codes ({naicsPrimary.length}/10)
-                  </label>
-                  <div className="flex gap-2 mb-3">
-                    <Input
-                      placeholder="6-digit NAICS (e.g., 541512)"
-                      maxLength={6}
-                      value={newNaics}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, '');
-                        setNewNaics(value);
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (naicsPrimary.length < 10 && newNaics.length === 6) {
-                            addItem(naicsPrimary, setNaicsPrimary, newNaics, () => setNewNaics(''));
-                          }
-                        }
-                      }}
-                      disabled={naicsPrimary.length >= 10}
-                    />
-                    <Button
-                      onClick={() => {
-                        if (newNaics.length === 6) {
-                          addItem(naicsPrimary, setNaicsPrimary, newNaics, () => setNewNaics(''));
-                        }
-                      }}
-                      icon={<PlusIcon className="h-5 w-5" />}
-                      disabled={naicsPrimary.length >= 10 || newNaics.length !== 6}
-                    >
-                      Add
-                    </Button>
-                  </div>
+                  {/* Tier-based NAICS limit info */}
+                  {(() => {
+                    const tier = profile.subscription_tier || 'starter';
+                    const maxNaics = tier === 'pro' ? 5 : 3;
 
-                  {newNaics.length > 0 && newNaics.length < 6 && (
-                    <p className="text-xs text-yellow-400 mb-3">
-                      NAICS codes must be exactly 6 digits
-                    </p>
-                  )}
+                    return (
+                      <>
+                        <div className="mb-3 flex items-center justify-between">
+                          <label className="block text-sm font-medium text-gray-300">
+                            Primary NAICS Codes ({naicsPrimary.length}/{maxNaics})
+                          </label>
+                          <Badge variant={tier === 'pro' ? 'primary' : 'info'} className="text-xs">
+                            {tier === 'pro' ? 'Pro' : 'Starter'} Plan
+                          </Badge>
+                        </div>
 
-                  {naicsPrimary.length >= 10 && (
-                    <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                      <p className="text-sm text-yellow-300">
-                        Maximum of 10 NAICS codes reached. Remove one to add another.
-                      </p>
-                    </div>
-                  )}
+                        {tier === 'starter' && (
+                          <div className="mb-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                            <p className="text-sm text-blue-300">
+                              💡 <strong>Starter Plan:</strong> You can add up to 3 NAICS codes. Upgrade to Pro for 5 NAICS codes.
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 mb-3">
+                          <Input
+                            placeholder="6-digit NAICS (e.g., 541512)"
+                            maxLength={6}
+                            value={newNaics}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9]/g, '');
+                              setNewNaics(value);
+                            }}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (naicsPrimary.length < maxNaics && newNaics.length === 6) {
+                                  addItem(naicsPrimary, setNaicsPrimary, newNaics, () => setNewNaics(''));
+                                }
+                              }
+                            }}
+                            disabled={naicsPrimary.length >= maxNaics}
+                          />
+                          <Button
+                            onClick={() => {
+                              if (newNaics.length === 6) {
+                                addItem(naicsPrimary, setNaicsPrimary, newNaics, () => setNewNaics(''));
+                              }
+                            }}
+                            icon={<PlusIcon className="h-5 w-5" />}
+                            disabled={naicsPrimary.length >= maxNaics || newNaics.length !== 6}
+                          >
+                            Add
+                          </Button>
+                        </div>
+
+                        {newNaics.length > 0 && newNaics.length < 6 && (
+                          <p className="text-xs text-yellow-400 mb-3">
+                            NAICS codes must be exactly 6 digits
+                          </p>
+                        )}
+
+                        {naicsPrimary.length >= maxNaics && (
+                          <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                            <p className="text-sm text-yellow-300">
+                              Maximum of {maxNaics} NAICS codes reached for your {tier === 'pro' ? 'Pro' : 'Starter'} plan. Remove one to add another.
+                              {tier === 'starter' && <span className="block mt-1">💎 Upgrade to Pro to add up to 5 NAICS codes.</span>}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   <div className="flex flex-wrap gap-2">
                     {naicsPrimary.map((naics) => (
@@ -520,11 +563,19 @@ export default function ConsistentProfilePage() {
                     </div>
                   )}
 
-                  {naicsPrimary.length > 0 && naicsPrimary.length < 3 && (
-                    <p className="text-sm text-yellow-400 mt-3">
-                      Add at least 3 NAICS codes for optimal opportunity matching
-                    </p>
-                  )}
+                  {(() => {
+                    const tier = profile.subscription_tier || 'starter';
+                    const maxNaics = tier === 'pro' ? 5 : 3;
+
+                    if (naicsPrimary.length > 0 && naicsPrimary.length < maxNaics) {
+                      return (
+                        <p className="text-sm text-yellow-400 mt-3">
+                          💡 Add up to {maxNaics} NAICS codes ({naicsPrimary.length}/{maxNaics}) for optimal opportunity matching
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
 
