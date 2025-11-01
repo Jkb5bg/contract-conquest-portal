@@ -181,10 +181,14 @@ export interface MarketplaceFilters {
   featured_only?: boolean;
 }
 
+export type SubscriptionTier = 'starter' | 'pro';
+
 export interface TierInfo {
-  tier_name: string;
+  tier_name: SubscriptionTier;
   tier_level: number;
   features: string[];
+  max_naics_codes: number;
+  min_opportunity_score: number;
   contact_limit_monthly?: number | null;
   booking_limit_monthly?: number | null;
 }
@@ -194,6 +198,7 @@ export interface MyTierInfo extends TierInfo {
   bookings_used_this_month: number;
   can_contact: boolean;
   can_book: boolean;
+  naics_codes_used: number;
 }
 
 export interface BookingMessage {
