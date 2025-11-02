@@ -169,10 +169,6 @@ export default function ConsistentOpportunitiesPage() {
       setSelectedIds(new Set());
     } catch (error) {
       console.error('Failed to fetch opportunities:', error);
-      // Show user-friendly error message
-      if (error instanceof Error) {
-        alert(`Failed to load opportunities: ${error.message}\n\nPlease check BACKEND_MIGRATION_NEEDED.md for required database migration.`);
-      }
     } finally {
       setLoading(false);
     }

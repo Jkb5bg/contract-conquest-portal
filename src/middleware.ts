@@ -4,8 +4,6 @@ import { NextRequest, NextResponse } from 'next/server';
  * Build Content Security Policy
  */
 function buildCSP(): string {
-  // Extract API domain from environment or use default
-  const apiDomain = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   const cspDirectives = [
@@ -15,7 +13,7 @@ function buildCSP(): string {
     "style-src 'self' 'unsafe-inline'", // Next.js and Tailwind need inline styles
     "img-src 'self' data: https://contractconquest.s3.amazonaws.com https://*.s3.amazonaws.com",
     "font-src 'self' data:",
-    `connect-src 'self' ${apiDomain} ws://localhost:* ws://127.0.0.1:*`, // Allow API calls + WebSocket for dev
+    "connect-src 'self' https://api.contractconquest.com http://localhost:8000 ws://localhost:* ws://127.0.0.1:*", // Allow API calls + WebSocket for dev
     "frame-ancestors 'none'", // Prevent clickjacking
     "base-uri 'self'",
     "form-action 'self'",
