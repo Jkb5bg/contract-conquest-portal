@@ -2,22 +2,23 @@
 
 Profile:
 
-#TODO 1 Connect to backend for NAICS code limitation
-#TODO 2 Connect to backend Subscriber tiers
 #TODO 3 Get with Justin to add in an audit results checklist
-#TODO 7 Create a system for one click email from match to proposal
-#TODO 8 Enhance security
-#TODO 15 flow from WHOP and tiers
 
+#TODONE 1 Connect to backend for NAICS code limitation (reflect on front end)
+#TODONE 2 Connect to backend Subscriber tiers
 #TODONE 4 Create marketplace
 #TODONE 5 Manage contacts via marketplace
 #TODONE 6 Fix emailing system so there's not a ton of spam
+#TODONE 7 Create a system for one click email from match to proposal
+#TODONE 8 Enhance security
 #TODONE 9 Create user accounts for proposal writers
 #TODONE 11 Fix Showing x-y of y total opportunities on opportunities page
 #TODONE 12 Fix low match quality that don't match NAICS and do
 #TODONE 10 Click from High Score opportunities dashboard / set max view
 #TODONE 13 Locations display
 #TODONE 14 Fix NAICS collective and opportunity flow
+#TODONE 15 flow from WHOP and tiers
+#TODONE Booking labels
 #TODONE Fix Login
 #TODONE Save/Pursue/Pass/View Details - Opportunity screen
 #TODONE Set max / paginated view in opportunities
