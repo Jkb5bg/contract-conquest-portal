@@ -58,6 +58,10 @@ export function middleware(request: NextRequest) {
   // Generate nonce for CSP (needed for all requests)
   const nonce = generateNonce();
 
+  // Create new headers with nonce for Next.js to use in inline scripts
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+
   // Log for debugging authentication issues
   console.log(`[Middleware] Path: ${pathname}, Has Token: ${hasToken}`);
 
@@ -80,7 +84,11 @@ export function middleware(request: NextRequest) {
       return response;
     }
     // Otherwise, allow access to login page
-    const response = NextResponse.next();
+    const response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
     addSecurityHeaders(response, nonce);
     return response;
   }
@@ -94,7 +102,30 @@ export function middleware(request: NextRequest) {
       return response;
     }
     // Allow access
-    const response = NextResponse.next();
+    const response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+    addSecurityHeaders(response, nonce);
+    return response;
+  }
+
+  // Route: /writer protected routes
+  if (pathname.startsWith('/writer/dashboard') || pathname.startsWith('/writer/change-password')) {
+    const writerToken = request.cookies.get('writer_access_token')?.value;
+    if (!writerToken) {
+      console.log(`[Middleware] Unauthenticated writer access to ${pathname}, redirecting to writer login`);
+      const response = NextResponse.redirect(new URL('/writer/login', request.url));
+      addSecurityHeaders(response, nonce);
+      return response;
+    }
+    // Allow access
+    const response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
     addSecurityHeaders(response, nonce);
     return response;
   }
@@ -108,7 +139,11 @@ export function middleware(request: NextRequest) {
   }
 
   // All other routes
-  const response = NextResponse.next();
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
   addSecurityHeaders(response, nonce);
   return response;
 }
