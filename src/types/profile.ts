@@ -1,3 +1,14 @@
+/**
+ * Subscription Tier (Frontend Display Names)
+ *
+ * Note: The backend uses 'basic' and 'premium' internally,
+ * but these are automatically mapped to 'starter' and 'pro'
+ * by the API client for consistent user-facing terminology.
+ *
+ * Mapping:
+ * - backend 'basic' → frontend 'starter'
+ * - backend 'premium' → frontend 'pro'
+ */
 export type SubscriptionTier = 'starter' | 'pro';
 
 export interface ClientProfile {
