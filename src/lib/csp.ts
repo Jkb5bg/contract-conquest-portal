@@ -18,7 +18,7 @@ export async function getNonce(): Promise<string | undefined> {
   try {
     const headersList = await headers();
     return headersList.get('x-nonce') || undefined;
-  } catch (error) {
+  } catch {
     // In client components or when headers are not available
     console.warn('CSP nonce not available. This is expected in client components.');
     return undefined;
