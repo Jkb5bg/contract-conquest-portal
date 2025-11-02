@@ -93,7 +93,7 @@ export default function ConsistentOpportunitiesPage() {
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, sortBy, searchQuery, filterLocation, filterStatus, filterScoreMin, filterScoreMax, forceReloadKey]);
+  }, [currentPage, pageSize, sortBy, searchQuery, filterLocation, filterScoreMin, filterScoreMax, forceReloadKey]);
 
   const fetchUserTier = async () => {
     try {
@@ -107,12 +107,13 @@ export default function ConsistentOpportunitiesPage() {
   };
 
   // Reset to page 1 when filters change (but not on initial mount)
+  // Note: filterStatus is not included because it's filtered client-side
   useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, filterLocation, filterStatus, filterScoreMin, filterScoreMax]);
+  }, [searchQuery, filterLocation, filterScoreMin, filterScoreMax]);
 
   const fetchOpportunities = async () => {
     try {
@@ -291,9 +292,15 @@ export default function ConsistentOpportunitiesPage() {
     )
   ).sort();
 
-  // All filtering is now done server-side
-  // The opportunities array already contains the filtered results
-  const filteredOpportunities = opportunities;
+  // Most filtering is done server-side, but status filtering is done client-side
+  // until backend migration adds status column to database
+  const filteredOpportunities = opportunities.filter(opp => {
+    // Apply status filter client-side
+    if (filterStatus !== 'all' && opp.status !== filterStatus) {
+      return false;
+    }
+    return true;
+  });
 
   const getScoreBadge = (score: number) => {
     if (score >= 0.8) return 'Excellent';
