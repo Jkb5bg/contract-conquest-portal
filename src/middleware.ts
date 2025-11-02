@@ -1,9 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * Generate a cryptographically secure nonce for CSP
+ */
+function generateNonce(): string {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return Buffer.from(array).toString('base64');
+}
+
+/**
+ * Build Content Security Policy with nonce
+ */
+function buildCSP(nonce: string): string {
+  // Extract API domain from environment or use default
+  const apiDomain = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  const cspDirectives = [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`, // Nonce-based script loading
+    "style-src 'self' 'unsafe-inline'", // Next.js and Tailwind need inline styles
+    "img-src 'self' data: https://contractconquest.s3.amazonaws.com https://*.s3.amazonaws.com https://*.s3.*.amazonaws.com",
+    "font-src 'self' data:",
+    `connect-src 'self' ${apiDomain} ws://localhost:* ws://127.0.0.1:*`, // Allow API calls + WebSocket for dev
+    "frame-ancestors 'none'", // Prevent clickjacking
+    "base-uri 'self'",
+    "form-action 'self'",
+  ];
+
+  // Only add upgrade-insecure-requests in production (breaks localhost in dev)
+  if (!isDevelopment) {
+    cspDirectives.push("upgrade-insecure-requests");
+  }
+
+  return cspDirectives.join('; ');
+}
+
+/**
+ * Add security headers to any response
+ */
+function addSecurityHeaders(response: NextResponse, nonce: string): void {
+  const csp = buildCSP(nonce);
+  response.headers.set('Content-Security-Policy', csp);
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.headers.set('x-nonce', nonce); // Store nonce for components
+}
+
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const token = request.cookies.get('access_token')?.value;
   const hasToken = !!token;
+
+  // Generate nonce for CSP (needed for all requests)
+  const nonce = generateNonce();
 
   // Log for debugging authentication issues
   console.log(`[Middleware] Path: ${pathname}, Has Token: ${hasToken}`);
@@ -20,37 +73,55 @@ export function middleware(request: NextRequest) {
 
   // Route: /login
   if (pathname === '/login') {
-    // If user has token, redirect to dashboard
     if (hasToken) {
       console.log('[Middleware] Authenticated user accessing /login, redirecting to dashboard');
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      const response = NextResponse.redirect(new URL('/dashboard', request.url));
+      addSecurityHeaders(response, nonce);
+      return response;
     }
     // Otherwise, allow access to login page
-    return NextResponse.next();
+    const response = NextResponse.next();
+    addSecurityHeaders(response, nonce);
+    return response;
   }
 
   // Route: /dashboard and protected routes
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/change-password')) {
-    // If no token, redirect to login
     if (!hasToken) {
       console.log(`[Middleware] Unauthenticated access to ${pathname}, redirecting to login`);
-      return NextResponse.redirect(new URL('/login', request.url));
+      const response = NextResponse.redirect(new URL('/login', request.url));
+      addSecurityHeaders(response, nonce);
+      return response;
     }
     // Allow access
-    return NextResponse.next();
+    const response = NextResponse.next();
+    addSecurityHeaders(response, nonce);
+    return response;
   }
 
   // Route: /
   if (pathname === '/') {
-    if (hasToken) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-    return NextResponse.redirect(new URL('/login', request.url));
+    const redirectUrl = hasToken ? '/dashboard' : '/login';
+    const response = NextResponse.redirect(new URL(redirectUrl, request.url));
+    addSecurityHeaders(response, nonce);
+    return response;
   }
 
-  return NextResponse.next();
+  // All other routes
+  const response = NextResponse.next();
+  addSecurityHeaders(response, nonce);
+  return response;
 }
 
 export const config = {
-  matcher: ['/', '/login', '/dashboard/:path*', '/change-password'],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico (favicon)
+     * - public folder files (images, etc.)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };

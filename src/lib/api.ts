@@ -2,6 +2,24 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'ax
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+// Type for API error response with retry_after
+interface RateLimitErrorResponse {
+  retry_after?: number;
+  error?: string;
+  message?: string;
+}
+
+// Extended error type with additional properties
+interface EnhancedError extends Error {
+  retryAfter?: number;
+  status?: number;
+}
+
+// Extended request config type with _retry flag
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
 // Create axios instance
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE,
@@ -32,8 +50,9 @@ apiClient.interceptors.response.use(
 
     // Handle 429 Rate Limit errors
     if (error.response?.status === 429) {
-      const retryAfter = (error.response.data as any)?.retry_after ||
-                        error.response.headers['retry-after'] ||
+      const errorData = error.response.data as RateLimitErrorResponse;
+      const retryAfter = errorData?.retry_after ||
+                        Number(error.response.headers['retry-after']) ||
                         60;
 
       console.warn(`Rate limit exceeded. Retry after ${retryAfter} seconds.`);
@@ -49,15 +68,16 @@ apiClient.interceptors.response.use(
       }
 
       // Enhance error with user-friendly message
-      const enhancedError = new Error(errorMessage) as any;
+      const enhancedError = new Error(errorMessage) as EnhancedError;
       enhancedError.retryAfter = retryAfter;
       enhancedError.status = 429;
       return Promise.reject(enhancedError);
     }
 
     // Handle 401 Unauthorized with token refresh
-    if (error.response?.status === 401 && originalRequest && !(originalRequest as any)._retry) {
-      (originalRequest as any)._retry = true;
+    const retryableRequest = originalRequest as RetryableRequestConfig | undefined;
+    if (error.response?.status === 401 && retryableRequest && !retryableRequest._retry) {
+      retryableRequest._retry = true;
 
       try {
         const refreshToken = localStorage.getItem('refresh_token');
@@ -72,10 +92,10 @@ apiClient.interceptors.response.use(
           localStorage.setItem('access_token', access_token);
 
           // Retry original request with new token
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          if (retryableRequest && retryableRequest.headers) {
+            retryableRequest.headers.Authorization = `Bearer ${access_token}`;
           }
-          return apiClient(originalRequest);
+          return apiClient(retryableRequest!);
         }
       } catch (refreshError) {
         // Refresh failed, redirect to login
