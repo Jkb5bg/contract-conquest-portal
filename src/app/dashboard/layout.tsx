@@ -23,7 +23,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/dashboard/opportunities': 'Opportunities',
   '/dashboard/profile': 'Profile',
-  '/dashboard/proposals': 'Proposals',
+  // '/dashboard/proposals': 'Proposals',
   '/dashboard/marketplace': 'Writer Marketplace',
   '/dashboard/bookings': 'My Bookings',
   '/dashboard/admin': 'Admin Panel',
