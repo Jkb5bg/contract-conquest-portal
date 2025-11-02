@@ -1,3 +1,10 @@
+/**
+ * Subscription Tier
+ *
+ * Both backend and frontend use the same tier names:
+ * - 'starter': Starter Plan (3 NAICS codes, 75% min score)
+ * - 'pro': Pro Plan (5 NAICS codes, 50% min score)
+ */
 export type SubscriptionTier = 'starter' | 'pro';
 
 export interface ClientProfile {
