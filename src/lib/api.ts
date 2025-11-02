@@ -1,5 +1,4 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios';
-import { mapBackendToFrontend } from './tierMapping';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -25,23 +24,9 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle tier mapping and errors
+// Response interceptor to handle errors
 apiClient.interceptors.response.use(
-  (response) => {
-    // Map backend tier names (basic/premium) to frontend tier names (starter/pro)
-    if (response.data && typeof response.data === 'object') {
-      if ('subscription_tier' in response.data) {
-        response.data.subscription_tier = mapBackendToFrontend(response.data.subscription_tier);
-      }
-
-      // Handle tier info in nested objects
-      if ('tier_name' in response.data) {
-        response.data.tier_name = mapBackendToFrontend(response.data.tier_name);
-      }
-    }
-
-    return response;
-  },
+  (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config;
 

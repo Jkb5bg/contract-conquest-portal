@@ -1,13 +1,9 @@
 /**
- * Subscription Tier (Frontend Display Names)
+ * Subscription Tier
  *
- * Note: The backend uses 'basic' and 'premium' internally,
- * but these are automatically mapped to 'starter' and 'pro'
- * by the API client for consistent user-facing terminology.
- *
- * Mapping:
- * - backend 'basic' → frontend 'starter'
- * - backend 'premium' → frontend 'pro'
+ * Both backend and frontend use the same tier names:
+ * - 'starter': Starter Plan (3 NAICS codes, 75% min score)
+ * - 'pro': Pro Plan (5 NAICS codes, 50% min score)
  */
 export type SubscriptionTier = 'starter' | 'pro';
 

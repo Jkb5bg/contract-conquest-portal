@@ -1,53 +1,36 @@
 /**
- * Tier Mapping Utilities
+ * Tier Utilities
  *
- * The backend uses "basic" and "premium" internally,
- * but we display "Starter" and "Pro" to users for better UX.
+ * Helper functions for working with subscription tiers.
+ * Both backend and frontend use 'starter' and 'pro' tier names.
  */
 
-// Backend tier names (what the API uses)
-export type BackendTier = 'basic' | 'premium';
-
-// Frontend tier names (what we show to users)
-export type FrontendTier = 'starter' | 'pro';
-
-/**
- * Map backend tier name to frontend display name
- */
-export function mapBackendToFrontend(backendTier: BackendTier | null | undefined): FrontendTier {
-  if (backendTier === 'premium') return 'pro';
-  return 'starter'; // Default to starter for 'basic', null, or undefined
-}
-
-/**
- * Map frontend tier name to backend API name
- */
-export function mapFrontendToBackend(frontendTier: FrontendTier): BackendTier {
-  if (frontendTier === 'pro') return 'premium';
-  return 'basic';
-}
+export type SubscriptionTier = 'starter' | 'pro';
 
 /**
  * Get tier display name for UI
  */
-export function getTierDisplayName(tier: FrontendTier): string {
-  return tier === 'pro' ? 'Pro Plan' : 'Starter Plan';
+export function getTierDisplayName(tier: SubscriptionTier | null | undefined): string {
+  if (tier === 'pro') return 'Pro Plan';
+  return 'Starter Plan'; // Default to Starter for null/undefined
 }
 
 /**
  * Get tier emoji
  */
-export function getTierEmoji(tier: FrontendTier): string {
-  return tier === 'pro' ? '💎' : '🚀';
+export function getTierEmoji(tier: SubscriptionTier | null | undefined): string {
+  if (tier === 'pro') return '💎';
+  return '🚀'; // Default to Starter emoji
 }
 
 /**
- * Get tier limits based on frontend tier name
+ * Get tier limits based on tier name
  */
-export function getTierLimits(tier: FrontendTier) {
+export function getTierLimits(tier: SubscriptionTier | null | undefined) {
+  const isPro = tier === 'pro';
   return {
-    maxNaicsCodes: tier === 'pro' ? 5 : 3,
-    minOpportunityScore: tier === 'pro' ? 0.5 : 0.75,
+    maxNaicsCodes: isPro ? 5 : 3,
+    minOpportunityScore: isPro ? 0.5 : 0.75,
     writerContacts: 'unlimited' as const,
   };
 }

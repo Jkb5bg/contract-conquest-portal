@@ -2,34 +2,17 @@
 
 ## Overview
 
-The frontend uses a **tier mapping layer** to translate between backend tier names and user-facing tier names. This ensures consistent terminology across the application while maintaining compatibility with the backend API.
-
-## Tier Name Mapping
-
-### Backend → Frontend Translation
-
-| Backend Tier | Frontend Tier | Display Name |
-|--------------|---------------|--------------|
-| `basic` | `starter` | "Starter Plan" |
-| `premium` | `pro` | "Pro Plan" |
-
-### How It Works
-
-1. **API Responses**: When the backend returns `subscription_tier: "basic"`, the API client automatically converts it to `subscription_tier: "starter"` before it reaches React components.
-
-2. **Type Safety**: Throughout the frontend code, the `SubscriptionTier` type is defined as `'starter' | 'pro'`, ensuring type safety.
-
-3. **Automatic Mapping**: The mapping happens transparently in `src/lib/api.ts` using the response interceptor.
+Both the **backend and frontend** use the same tier names: `"starter"` and `"pro"`. This ensures consistent terminology across the entire application without requiring any translation layer.
 
 ## Tier Features & Limits
 
-### Starter Plan (Backend: "basic")
+### Starter Plan
 - ✅ **NAICS Codes**: 3 maximum
 - ✅ **Opportunity Match Score**: Minimum 75%
 - ✅ **Writer Contacts**: Unlimited
 - ✅ **Daily Opportunities**: Score ≥ 0.75
 
-### Pro Plan (Backend: "premium")
+### Pro Plan
 - ✅ **NAICS Codes**: 5 maximum
 - ✅ **Opportunity Match Score**: Minimum 50%
 - ✅ **Writer Contacts**: Unlimited
@@ -37,29 +20,22 @@ The frontend uses a **tier mapping layer** to translate between backend tier nam
 
 ## Implementation Details
 
-### Tier Mapping Utility
+### Tier Utility Functions
 
 Location: `src/lib/tierMapping.ts`
 
 ```typescript
-// Map backend tier to frontend display
-mapBackendToFrontend('basic') // → 'starter'
-mapBackendToFrontend('premium') // → 'pro'
+// Get display names
+getTierDisplayName('starter') // → "Starter Plan"
+getTierDisplayName('pro') // → "Pro Plan"
+
+// Get tier emojis
+getTierEmoji('starter') // → "🚀"
+getTierEmoji('pro') // → "💎"
 
 // Get tier limits
 getTierLimits('starter') // → { maxNaicsCodes: 3, minOpportunityScore: 0.75, ... }
 getTierLimits('pro') // → { maxNaicsCodes: 5, minOpportunityScore: 0.5, ... }
-```
-
-### API Client Integration
-
-Location: `src/lib/api.ts`
-
-The API client automatically transforms tier names in all responses:
-
-```typescript
-// Backend responds with: { subscription_tier: "basic" }
-// Frontend receives: { subscription_tier: "starter" }
 ```
 
 ### Components Using Tier Info
@@ -122,7 +98,7 @@ To upgrade a user from Starter to Pro:
 ```sql
 -- Update subscription tier in database
 UPDATE client_profiles
-SET subscription_tier = 'premium'  -- Note: Use 'premium', not 'pro'
+SET subscription_tier = 'pro'
 WHERE email = 'user@example.com';
 ```
 
@@ -130,10 +106,9 @@ WHERE email = 'user@example.com';
 
 The frontend will automatically:
 1. Fetch the updated tier on next API call
-2. Map `"premium"` → `"pro"` for display
-3. Update UI to show Pro benefits
-4. Remove NAICS code limits restriction (5 instead of 3)
-5. Show opportunities with lower match scores (50% instead of 75%)
+2. Update UI to show Pro benefits
+3. Update NAICS code limit to 5 (from 3)
+4. Show opportunities with lower match scores (50% instead of 75%)
 
 ## Type Definitions
 
@@ -177,17 +152,25 @@ export interface TierInfo {
 
 ## Migration Notes
 
-### From Old Tier Names
+### From Old Tier Names (basic/premium)
 
-If you previously used different tier names:
+If you previously used `"basic"` and `"premium"` tier names, update your database:
 
-1. **Update Database**: Change all `subscription_tier` values to either `'basic'` or `'premium'`
-2. **Clear Cache**: Users may need to refresh or clear localStorage
-3. **Verify**: Check that tier display updates correctly
+```sql
+-- Update all tier names to new convention
+UPDATE client_profiles
+SET subscription_tier = 'starter'
+WHERE subscription_tier = 'basic';
 
-### Backend Compatibility
+UPDATE client_profiles
+SET subscription_tier = 'pro'
+WHERE subscription_tier = 'premium';
+```
 
-The frontend is compatible with backends using:
-- ✅ `"basic"` and `"premium"` tier names
-- ✅ Automatic mapping to `"starter"` and `"pro"` for display
-- ✅ No frontend code changes needed if backend tier names change (just update the mapping utility)
+### Backend & Frontend Alignment
+
+Both systems now use the same tier names:
+- ✅ Backend stores: `"starter"` and `"pro"`
+- ✅ Frontend displays: "Starter Plan" and "Pro Plan"
+- ✅ No translation layer needed
+- ✅ Type-safe throughout the application
