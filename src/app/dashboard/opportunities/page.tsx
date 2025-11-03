@@ -48,14 +48,17 @@ export default function ConsistentOpportunitiesPage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Applied filters
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  // Applied filters (used in API calls)
   const [filterScoreMin, setFilterScoreMin] = useState<number>(0.0);
   const [filterScoreMax, setFilterScoreMax] = useState<number>(1.0);
+  const [filterLocation, setFilterLocation] = useState<string>('all');
+
   // Pending filters (adjusted by user but not applied yet)
+  const [pendingFilterStatus, setPendingFilterStatus] = useState<string>('all');
   const [pendingScoreMin, setPendingScoreMin] = useState<number>(0.0);
   const [pendingScoreMax, setPendingScoreMax] = useState<number>(1.0);
-  const [filterLocation, setFilterLocation] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('score');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [forceReloadKey, setForceReloadKey] = useState<number>(0);
@@ -93,7 +96,7 @@ export default function ConsistentOpportunitiesPage() {
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, sortBy, searchQuery, filterLocation, filterStatus, filterScoreMin, filterScoreMax, forceReloadKey]);
+  }, [currentPage, pageSize, sortBy, searchQuery, filterLocation, filterScoreMin, filterScoreMax, forceReloadKey]);
 
   const fetchUserTier = async () => {
     try {
@@ -107,12 +110,13 @@ export default function ConsistentOpportunitiesPage() {
   };
 
   // Reset to page 1 when filters change (but not on initial mount)
+  // Note: filterStatus is not included because it's filtered client-side
   useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, filterLocation, filterStatus, filterScoreMin, filterScoreMax]);
+  }, [searchQuery, filterLocation, filterScoreMin, filterScoreMax]);
 
   const fetchOpportunities = async () => {
     try {
@@ -175,18 +179,20 @@ export default function ConsistentOpportunitiesPage() {
   };
 
   const handleApplyFilters = () => {
-    // Apply pending score filters and force reload
+    // Apply pending filters
+    setFilterStatus(pendingFilterStatus);
     setFilterScoreMin(pendingScoreMin);
     setFilterScoreMax(pendingScoreMax);
     // Reset to page 1 when applying filters
     setCurrentPage(1);
-    // Force reload to get fresh data
+    // Force reload to get fresh data from server
     setForceReloadKey(prev => prev + 1);
   };
 
   const handleClearFilters = () => {
     setSearchQuery('');
-    // setFilterStatus('all'); // Disabled until backend adds status column
+    setFilterStatus('all');
+    setPendingFilterStatus('all');
     setPendingScoreMin(0.0);
     setPendingScoreMax(1.0);
     setFilterScoreMin(0.0);
@@ -291,9 +297,15 @@ export default function ConsistentOpportunitiesPage() {
     )
   ).sort();
 
-  // All filtering is now done server-side
-  // The opportunities array already contains the filtered results
-  const filteredOpportunities = opportunities;
+  // Most filtering is done server-side, but status filtering is done client-side
+  // until backend migration adds status column to database
+  const filteredOpportunities = opportunities.filter(opp => {
+    // Apply status filter client-side
+    if (filterStatus !== 'all' && opp.status !== filterStatus) {
+      return false;
+    }
+    return true;
+  });
 
   const getScoreBadge = (score: number) => {
     if (score >= 0.8) return 'Excellent';
@@ -384,8 +396,8 @@ export default function ConsistentOpportunitiesPage() {
               />
 
               <Select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                value={pendingFilterStatus}
+                onChange={(e) => setPendingFilterStatus(e.target.value)}
                 options={[
                   { value: 'all', label: 'All Status' },
                   { value: OpportunityStatus.NEW, label: '🆕 New' },
@@ -482,7 +494,7 @@ export default function ConsistentOpportunitiesPage() {
                   >
                     Apply Filters
                   </Button>
-                  {(searchQuery || filterStatus !== 'all' || filterLocation !== 'all' || pendingScoreMin > 0 || pendingScoreMax < 1) && (
+                  {(searchQuery || pendingFilterStatus !== 'all' || filterLocation !== 'all' || pendingScoreMin > 0 || pendingScoreMax < 1) && (
                     <Button
                       variant="secondary"
                       onClick={handleClearFilters}
