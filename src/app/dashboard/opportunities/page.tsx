@@ -314,9 +314,9 @@ export default function ConsistentOpportunitiesPage() {
   };
 
   // Calculate pagination info
+  // Server-side pagination determines pages, client-side filtering determines visible count
+  const filteredTotal = filteredOpportunities.length;
   const totalPages = Math.ceil(pagination.total / pageSize);
-  const startItem = pagination.offset + 1;
-  const endItem = Math.min(pagination.offset + pageSize, pagination.total);
 
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -347,8 +347,8 @@ export default function ConsistentOpportunitiesPage() {
             <div>
               <h1 className="text-2xl font-bold text-white mb-2">Your Opportunities</h1>
               <p className="text-gray-400">
-                {pagination.total > 0 ? (
-                  <>Showing {startItem}-{endItem} of <strong className="text-white">{pagination.total}</strong> total opportunities</>
+                {filteredTotal > 0 ? (
+                  <>Showing <strong className="text-white">{filteredTotal}</strong> {filteredTotal === 1 ? 'opportunity' : 'opportunities'}</>
                 ) : (
                   <>No opportunities found matching your filters</>
                 )}
@@ -404,7 +404,6 @@ export default function ConsistentOpportunitiesPage() {
                   { value: OpportunityStatus.SAVED, label: '⭐ Saved' },
                   { value: OpportunityStatus.PURSUING, label: '🚀 Pursuing' },
                   { value: OpportunityStatus.APPLIED, label: '✓ Applied' },
-                  { value: OpportunityStatus.PASSED, label: '✗ Passed' },
                 ]}
               />
 
@@ -755,7 +754,7 @@ export default function ConsistentOpportunitiesPage() {
               <div className="text-xs sm:text-sm text-gray-400 text-center lg:text-left">
                 Page <span className="text-white font-semibold">{currentPage}</span> of{' '}
                 <span className="text-white font-semibold">{totalPages}</span>
-                {' '}({pagination.total} total)
+                {' '}({filteredTotal} filtered)
               </div>
 
               {/* Center: Page Numbers */}
