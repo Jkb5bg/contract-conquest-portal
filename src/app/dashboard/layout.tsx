@@ -1,5 +1,6 @@
 'use client';
-import {usePathname} from 'next/navigation';
+import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -29,6 +30,7 @@ const PAGE_TITLES: Record<string, string> = {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isLoading, logout } = useAuth();
+  const router = useRouter();
 
   const isAdmin = user && ADMIN_EMAILS.includes(user.email);
 
@@ -47,6 +49,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const currentPageTitle = PAGE_TITLES[pathname] || 'Portal';
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [isLoading, user, router]);
+
   // Show loading state while checking authentication
   if (isLoading) {
     return (
@@ -59,9 +68,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  // Don't render dashboard if not authenticated - let middleware/page handle redirect
+  // Show nothing while redirecting to login
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-400 mt-4">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
