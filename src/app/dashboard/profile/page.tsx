@@ -999,6 +999,70 @@ export default function ConsistentProfilePage() {
               </div>
             </CardFooter>
           </Card>
+
+          {/* Subscription Management - Legally Required but Discouraged */}
+          <Card className="mt-6 opacity-75 hover:opacity-100 transition-opacity">
+            <CardBody>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-300">Subscription Plan</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={profile?.subscription_tier === 'pro' ? 'primary' : 'info'}>
+                        {profile?.subscription_tier === 'pro' ? '💎 Pro Plan' : '🚀 Starter Plan'}
+                      </Badge>
+                      <span className="text-xs text-gray-500">
+                        {profile?.subscription_tier === 'pro'
+                          ? '5 NAICS • Unlimited opportunities'
+                          : '3 NAICS • 50 opportunities/month'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* What You'll Lose Warning */}
+                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <p className="text-xs font-medium text-yellow-300 mb-2">
+                    ⚠️ Important: What happens if you cancel
+                  </p>
+                  <ul className="text-xs text-yellow-200 space-y-1 ml-4 list-disc">
+                    <li>You'll stop receiving personalized opportunity matches</li>
+                    <li>Your AI-powered match scoring will be disabled</li>
+                    <li>You'll lose access to the writer marketplace</li>
+                    <li>Your saved opportunities and preferences will be archived</li>
+                  </ul>
+                </div>
+
+                {/* Obscured Cancellation Link */}
+                <div className="pt-3 border-t border-gray-700/50">
+                  <details className="group">
+                    <summary className="text-xs text-gray-500 hover:text-gray-400 cursor-pointer list-none flex items-center gap-1">
+                      <span>Account options</span>
+                      <svg className="w-3 h-3 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </summary>
+                    <div className="mt-3 p-3 bg-gray-800/50 rounded-lg">
+                      <p className="text-xs text-gray-400 mb-3">
+                        Need to make changes to your subscription? You can manage billing, update payment methods, or make other account changes through our secure payment portal.
+                      </p>
+                      <button
+                        onClick={() => window.open('https://whop.com/@me/settings/orders/', '_blank')}
+                        className="text-xs text-gray-500 hover:text-gray-400 underline flex items-center gap-1"
+                      >
+                        Manage subscription settings
+                        <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                      </button>
+                      <p className="text-xs text-gray-600 mt-2 italic">
+                        Note: Your access will continue until the end of your current billing period if you make any changes.
+                      </p>
+                    </div>
+                  </details>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
         </div>
       </div>
     </div>
