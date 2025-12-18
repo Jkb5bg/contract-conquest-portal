@@ -47,7 +47,7 @@ export default function EnhancedDashboard() {
       const oppsRes = await apiClient.get(`/opportunities/mine?limit=5&score_min=${scoreMin}`);
       setRecentOpportunities(oppsRes.data.opportunities || []);
     } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
+      console.error('Failed to fetch the dashboard data:', error);
     } finally {
       setLoading(false);
     }
