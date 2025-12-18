@@ -1027,9 +1027,9 @@ export default function ConsistentProfilePage() {
                     ⚠️ Important: What happens if you cancel
                   </p>
                   <ul className="text-xs text-yellow-200 space-y-1 ml-4 list-disc">
-                    <li>You'll stop receiving personalized opportunity matches</li>
+                    <li>You&#39;ll stop receiving personalized opportunity matches</li>
                     <li>Your AI-powered match scoring will be disabled</li>
-                    <li>You'll lose access to the writer marketplace</li>
+                    <li>You&#39;ll lose access to the writer marketplace</li>
                     <li>Your saved opportunities and preferences will be archived</li>
                   </ul>
                 </div>
