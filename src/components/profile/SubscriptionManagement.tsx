@@ -32,7 +32,8 @@ export default function SubscriptionManagement() {
   const router = useRouter();
   const [subData, setSubData] = useState<SubStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showReconsiderModal, setShowReconsiderModal] = useState(false);
+  const [showFinalConfirmModal, setShowFinalConfirmModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
   const fetchSubStatus = useCallback(async () => {
@@ -72,7 +73,14 @@ export default function SubscriptionManagement() {
   }, [fetchSubStatus]);
 
   const handleCancelClick = () => {
-    setShowCancelModal(true);
+    // First step: show reconsider modal
+    setShowReconsiderModal(true);
+  };
+
+  const handleProceedToCancel = () => {
+    // Second step: close reconsider, show final confirmation
+    setShowReconsiderModal(false);
+    setShowFinalConfirmModal(true);
   };
 
   const handleCancelConfirm = async () => {
@@ -89,7 +97,7 @@ export default function SubscriptionManagement() {
           cancel_at_period_end: true,
           renewal_period_end: res.data.renewal_period_end
         } : null);
-        setShowCancelModal(false);
+        setShowFinalConfirmModal(false);
       }
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorResponse>;
@@ -103,7 +111,7 @@ export default function SubscriptionManagement() {
       // 404 = No active membership found
       if (axiosError.response?.status === 404) {
         toast.error("No active membership found.");
-        setShowCancelModal(false);
+        setShowFinalConfirmModal(false);
         // Refresh subscription status
         fetchSubStatus();
         return;
@@ -145,17 +153,17 @@ export default function SubscriptionManagement() {
 
   return (
     <>
-      <Card className="mt-6 opacity-80 hover:opacity-100 transition-opacity duration-300">
+      <Card className="mt-6 opacity-70 hover:opacity-90 transition-opacity duration-300">
         <CardBody>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-medium text-gray-300">Subscription Plan</h4>
+                <h4 className="text-sm font-medium text-gray-400">Subscription Plan</h4>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant={subData.tier === 'pro' ? 'primary' : 'info'}>
                     {subData.tier === 'pro' ? 'Pro Plan' : 'Starter Plan'}
                   </Badge>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-600">
                     {subData.tier === 'pro'
                       ? '5 NAICS codes, unlimited opportunities'
                       : '3 NAICS codes, 50 opportunities/month'}
@@ -185,56 +193,116 @@ export default function SubscriptionManagement() {
                 </div>
               </div>
             ) : (
-              <>
-                {/* Warning about cancellation consequences */}
-                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                  <p className="text-xs font-medium text-yellow-300 mb-1">
-                    What happens if you cancel
-                  </p>
-                  <ul className="text-[11px] text-yellow-200/80 space-y-0.5 ml-4 list-disc">
-                    <li>Stop receiving personalized opportunity matches</li>
-                    <li>AI-powered match scoring will be disabled</li>
-                    <li>Saved opportunities and preferences will be archived</li>
-                  </ul>
-                </div>
+              <div className="pt-3 border-t border-gray-800/50 opacity-40 hover:opacity-60 transition-opacity duration-500">
+                <details className="group">
+                  <summary className="text-[10px] text-gray-600 hover:text-gray-500 cursor-pointer list-none flex items-center gap-1">
+                    <span>More options</span>
+                    <svg className="w-2.5 h-2.5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
 
-                <div className="pt-3 border-t border-gray-700/50">
-                  <details className="group">
-                    <summary className="text-xs text-gray-500 hover:text-gray-400 cursor-pointer list-none flex items-center gap-1">
-                      <span>Account options</span>
-                      <svg className="w-3 h-3 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </summary>
-
-                    <div className="mt-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/30">
-                      <p className="text-xs text-gray-400 mb-3">
-                        Need to end your subscription? Your access will continue until the end of your current billing period.
-                      </p>
-                      <button
-                        onClick={handleCancelClick}
-                        className="text-xs text-red-400/60 hover:text-red-400 underline transition-colors decoration-red-400/30"
-                      >
-                        Cancel subscription
-                      </button>
-
-                      <p className="text-[10px] text-gray-600 mt-4 italic">
-                        Note: For billing history or payment method updates, please contact our support team.
-                      </p>
-                    </div>
-                  </details>
-                </div>
-              </>
+                  <div className="mt-3 p-3 bg-gray-900/30 rounded-lg border border-gray-800/30">
+                    <p className="text-[10px] text-gray-600 mb-3">
+                      Need help with your account? Contact support for billing inquiries.
+                    </p>
+                    <button
+                      onClick={handleCancelClick}
+                      className="text-[10px] text-gray-600/50 hover:text-gray-500 transition-colors"
+                    >
+                      Manage subscription
+                    </button>
+                  </div>
+                </details>
+              </div>
             )}
           </div>
         </CardBody>
       </Card>
 
-      {/* Cancellation Confirmation Modal */}
+      {/* Step 1: Reconsider Modal */}
       <Modal
-        isOpen={showCancelModal}
-        onClose={() => !cancelling && setShowCancelModal(false)}
-        title="Cancel Subscription"
+        isOpen={showReconsiderModal}
+        onClose={() => setShowReconsiderModal(false)}
+        title="Before you go..."
+        size="sm"
+      >
+        <div className="space-y-5">
+          <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-purple-300">Are you getting the most out of your subscription?</p>
+                <p className="text-xs text-purple-200/70 mt-1">
+                  Many users discover new features after speaking with our team.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm text-gray-300 font-medium">Here&apos;s what you&apos;ll miss:</p>
+            <ul className="space-y-2 text-sm text-gray-400">
+              <li className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Personalized opportunity matching
+              </li>
+              <li className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                AI-powered contract analysis
+              </li>
+              <li className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Priority access to new opportunities
+              </li>
+              <li className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Unlimited saved searches
+              </li>
+            </ul>
+          </div>
+
+          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <p className="text-xs text-blue-300">
+              Having issues? Our support team can help resolve any problems you&apos;re experiencing.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-4 border-t border-gray-700">
+            <Button
+              variant="primary"
+              onClick={() => setShowReconsiderModal(false)}
+              className="w-full"
+            >
+              Keep My Subscription
+            </Button>
+            <button
+              onClick={handleProceedToCancel}
+              className="text-xs text-gray-500 hover:text-gray-400 py-2 transition-colors"
+            >
+              I still want to cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Step 2: Final Confirmation Modal */}
+      <Modal
+        isOpen={showFinalConfirmModal}
+        onClose={() => !cancelling && setShowFinalConfirmModal(false)}
+        title="Confirm Cancellation"
         size="sm"
       >
         <div className="space-y-4">
@@ -246,9 +314,9 @@ export default function SubscriptionManagement() {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-red-300">Are you sure you want to cancel?</p>
+                <p className="text-sm font-medium text-red-300">This action cannot be undone</p>
                 <p className="text-xs text-red-200/70 mt-1">
-                  You will lose access to Pro features at the end of your billing cycle.
+                  Your subscription will be cancelled and you&apos;ll lose access to premium features at the end of your billing period.
                 </p>
               </div>
             </div>
@@ -257,28 +325,28 @@ export default function SubscriptionManagement() {
           <div className="text-sm text-gray-400">
             <p className="mb-2">After cancellation:</p>
             <ul className="space-y-1 ml-4 list-disc text-gray-500">
-              <li>Your subscription will remain active until the end of your current billing period</li>
-              <li>You will not be charged for the next billing cycle</li>
-              <li>All your data and preferences will be saved</li>
+              <li>Access continues until end of billing period</li>
+              <li>No future charges will occur</li>
+              <li>Your data will be preserved</li>
             </ul>
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-gray-700">
             <Button
-              variant="ghost"
-              onClick={() => setShowCancelModal(false)}
+              variant="primary"
+              onClick={() => setShowFinalConfirmModal(false)}
               disabled={cancelling}
               className="flex-1"
             >
-              Keep Subscription
+              Go Back
             </Button>
             <Button
-              variant="danger"
+              variant="ghost"
               onClick={handleCancelConfirm}
               isLoading={cancelling}
-              className="flex-1"
+              className="flex-1 text-gray-400 hover:text-gray-300"
             >
-              {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+              {cancelling ? 'Processing...' : 'Cancel Subscription'}
             </Button>
           </div>
         </div>
