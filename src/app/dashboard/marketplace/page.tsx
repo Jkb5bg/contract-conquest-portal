@@ -317,10 +317,11 @@ export default function MarketplacePage() {
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-1 text-gray-400">
+                  {/* Temporarily hidden - bookings count */}
+                  {/* <div className="flex items-center gap-1 text-gray-400">
                     <BriefcaseIcon className="w-4 h-4" />
                     {writer.total_bookings} bookings
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Bio */}
