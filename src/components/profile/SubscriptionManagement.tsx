@@ -327,7 +327,7 @@ export default function SubscriptionManagement() {
             <ul className="space-y-1 ml-4 list-disc text-gray-500">
               <li>Access continues until end of billing period</li>
               <li>No future charges will occur</li>
-              <li>Your data will be preserved</li>
+              <li>Your data will not be preserved</li>
             </ul>
           </div>
 
