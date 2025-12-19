@@ -40,7 +40,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Marketplace', href: '/dashboard/marketplace', icon: ShoppingBagIcon },
     { name: 'My Bookings', href: '/dashboard/bookings', icon: CalendarIcon },
     { name: 'Profile', href: '/dashboard/profile', icon: UserCircleIcon },
-    { name: 'Proposals', href: '/dashboard/proposals', icon: ChartBarIcon },
   ];
 
   if (isAdmin) {
