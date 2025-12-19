@@ -153,17 +153,17 @@ export default function SubscriptionManagement() {
 
   return (
     <>
-      <Card className="mt-6 opacity-70 hover:opacity-90 transition-opacity duration-300">
+      <Card className="mt-6">
         <CardBody>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-medium text-gray-400">Subscription Plan</h4>
+                <h4 className="text-sm font-medium text-gray-300">Subscription Plan</h4>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant={subData.tier === 'pro' ? 'primary' : 'info'}>
                     {subData.tier === 'pro' ? 'Pro Plan' : 'Starter Plan'}
                   </Badge>
-                  <span className="text-xs text-gray-600">
+                  <span className="text-xs text-gray-500">
                     {subData.tier === 'pro'
                       ? '5 NAICS codes, unlimited opportunities'
                       : '3 NAICS codes, 50 opportunities/month'}
@@ -193,22 +193,22 @@ export default function SubscriptionManagement() {
                 </div>
               </div>
             ) : (
-              <div className="pt-3 border-t border-gray-800/50 opacity-40 hover:opacity-60 transition-opacity duration-500">
+              <div className="pt-3 border-t border-gray-700/50 opacity-60 hover:opacity-80 transition-opacity duration-300">
                 <details className="group">
-                  <summary className="text-[10px] text-gray-600 hover:text-gray-500 cursor-pointer list-none flex items-center gap-1">
+                  <summary className="text-xs text-gray-500 hover:text-gray-400 cursor-pointer list-none flex items-center gap-1">
                     <span>More options</span>
-                    <svg className="w-2.5 h-2.5 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </summary>
 
-                  <div className="mt-3 p-3 bg-gray-900/30 rounded-lg border border-gray-800/30">
-                    <p className="text-[10px] text-gray-600 mb-3">
+                  <div className="mt-3 p-3 bg-gray-800/40 rounded-lg border border-gray-700/30">
+                    <p className="text-xs text-gray-500 mb-3">
                       Need help with your account? Contact support for billing inquiries.
                     </p>
                     <button
                       onClick={handleCancelClick}
-                      className="text-[10px] text-gray-600/50 hover:text-gray-500 transition-colors"
+                      className="text-xs text-gray-500/70 hover:text-gray-400 transition-colors"
                     >
                       Manage subscription
                     </button>
