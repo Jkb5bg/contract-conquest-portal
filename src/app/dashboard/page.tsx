@@ -232,7 +232,8 @@ export default function EnhancedDashboard() {
           </Link>
         )}
 
-        <Link href="/dashboard/proposals">
+        {/* Temporarily hidden - Proposals/Writers section coming soon */}
+        {/* <Link href="/dashboard/proposals">
           <Card hoverable className="cursor-pointer">
             <CardBody className="text-center">
               <div className="inline-flex p-4 bg-green-500/20 rounded-full mb-3">
@@ -242,7 +243,7 @@ export default function EnhancedDashboard() {
               <p className="text-sm text-gray-400">Find a proposal writer</p>
             </CardBody>
           </Card>
-        </Link>
+        </Link> */}
       </div>
     </div>
   );
