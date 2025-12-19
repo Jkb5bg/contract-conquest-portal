@@ -193,10 +193,6 @@ export default function WriterProfilePage() {
                     </span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-gray-400">
-                  <BriefcaseIcon className="w-5 h-5" />
-                  {writer.total_bookings} bookings completed
-                </div>
                 {writer.years_experience && (
                   <div className="flex items-center gap-2 text-gray-400">
                     <ClockIcon className="w-5 h-5" />
